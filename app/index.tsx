@@ -1,15 +1,54 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Easing,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+
+const { width, height } = Dimensions.get('window');
+
+const COLORS = {
+  primary: '#6B4E3D',
+  secondary: '#5A8A7A',
+  accent: '#8B7355',
+  background: '#F7F5F3',
+  surface: '#ffffff',
+  text: '#2D1B14',
+  textSecondary: '#64748b',
+  success: '#5A8A7A',
+  warning: '#D4A574',
+  error: '#C4756B',
+  shadow: 'rgba(45, 27, 20, 0.15)',
+  cardBackground: '#4A6FA5',
+  membershipText: '#ffffff',
+  contactText: '#F0F8FF',
+};
 
 export default function Index() {
   const { user, loading, logout, getUserData } = useAuth();
   const [checkingProfile, setCheckingProfile] = useState(true);
+  const [showToastState, setShowToastState] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(50));
+  const [scaleAnim1] = useState(new Animated.Value(0.8));
+  const [scaleAnim2] = useState(new Animated.Value(0.8));
 
   useEffect(() => {
     const check = async () => {
-      console.log('🔄 Index useEffect:', { user: user?.uid || 'null', loading });
       if (!loading) {
         if (!user) {
           router.replace('/welcome');
@@ -20,6 +59,36 @@ export default function Index() {
             router.replace({ pathname: '/signup', params: { phone: user?.phoneNumber || '' } });
           } else {
             setCheckingProfile(false);
+            // 画面表示アニメーション開始
+            Animated.parallel([
+              Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+              }),
+              Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 800,
+                easing: Easing.out(Easing.exp),
+                useNativeDriver: true,
+              }),
+            ]).start();
+            
+            // カードのスケールアニメーション
+            Animated.stagger(200, [
+              Animated.spring(scaleAnim1, {
+                toValue: 1,
+                tension: 100,
+                friction: 8,
+                useNativeDriver: true,
+              }),
+              Animated.spring(scaleAnim2, {
+                toValue: 1,
+                tension: 100,
+                friction: 8,
+                useNativeDriver: true,
+              }),
+            ]).start();
           }
         }
       }
@@ -32,8 +101,14 @@ export default function Index() {
   };
 
   const handleContactPress = () => {
-    // TODO: Implement contact functionality
-    console.log('Contact pressed');
+    displayToast('Contact feature coming soon!', 'info');
+  };
+
+  const displayToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToastMsg(message);
+    setToastType(type);
+    setShowToastState(true);
+    setTimeout(() => setShowToastState(false), 2000);
   };
 
   const showAlert = (title: string, message: string, onConfirm: () => void) => {
@@ -47,88 +122,159 @@ export default function Index() {
         title,
         message,
         [
-          { text: 'キャンセル', style: 'cancel' },
-          { text: 'OK', onPress: onConfirm }
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Confirm', onPress: onConfirm, style: 'destructive' }
         ]
       );
     }
   };
 
   const handleLogout = async () => {
-    console.log('🔄 ログアウトボタンが押されました');
-    
-    showAlert('確認', 'ログアウトしますか？', async () => {
+    showAlert('Logout', 'Are you sure you want to logout?', async () => {
       try {
-        console.log('🔄 ログアウト処理開始');
         await logout();
-        console.log('✅ ログアウト成功');
-        // ログアウト後の遷移はuseEffectに任せる（明示的なリダイレクトを削除）
+        displayToast('Successfully logged out', 'success');
       } catch (error) {
-        console.error('❌ ログアウトエラー:', error);
-        if (Platform.OS === 'web') {
-          window.alert('ログアウトに失敗しました');
-        } else {
-          Alert.alert('エラー', 'ログアウトに失敗しました');
-        }
+        displayToast('Logout failed', 'error');
       }
     });
   };
 
-  // 認証状態をチェック中の場合
   if (loading || checkingProfile) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3AABD2" />
-        <Text style={styles.loadingText}>読み込み中...</Text>
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading your experience...</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
-  // userがnullの場合はここに到達しない（useEffectでリダイレクト済み）
+  const getToastColor = () => {
+    switch (toastType) {
+      case 'success': return COLORS.success;
+      case 'error': return COLORS.error;
+      default: return COLORS.primary;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Manga Lounge</Text>
-        <Text style={styles.welcomeText}>ようこそ、{user?.displayName || user?.email}さん</Text>
-        {/* ログアウトボタン */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>ログアウト</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Main Content */}
-      <View style={styles.content}>
-        {/* Membership Barcode Section */}
-        <TouchableOpacity style={styles.menuCard} onPress={handleMembershipPress}>
-          <View style={styles.cardContent}>
-            <Image 
-              source={require('../assets/images/license-icon.png')} 
-              style={styles.cardIcon}
-              resizeMode="contain"
-            />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      
+      <Animated.View 
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          }
+        ]}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.logo}>Manga Lounge</Text>
+              <Text style={styles.subtitle}>Your Digital Experience</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleLogout}
+              accessibilityLabel="Logout"
+            >
+              <Ionicons name="log-out-outline" size={24} color={COLORS.error} />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.cardTitle}>Membership Barcode</Text>
-        </TouchableOpacity>
-
-        {/* Contact Section */}
-        <TouchableOpacity style={styles.menuCard} onPress={handleContactPress}>
-          <View style={styles.cardContent}>
-            <Image 
-              source={require('../assets/images/mail-icon.png')} 
-              style={styles.cardIcon}
-              resizeMode="contain"
-            />
+          
+          <View style={styles.welcomeContainer}>
+            <Text style={styles.welcomeText}>
+              Welcome back,
+            </Text>
+            <Text style={styles.userName}>
+              {user?.displayName || user?.email || 'User'}
+            </Text>
           </View>
-          <Text style={styles.cardTitle}>Contact</Text>
-        </TouchableOpacity>
-      </View>
+        </View>
 
-      {/* Home Indicator */}
-      <View style={styles.homeIndicator}>
-        <View style={styles.homeIndicatorBar} />
-      </View>
+        {/* Main Menu */}
+        <View style={styles.menuContainer}>
+          <Animated.View style={{ transform: [{ scale: scaleAnim1 }] }}>
+            <TouchableOpacity
+              style={[styles.menuCard, styles.membershipCard]}
+              onPress={handleMembershipPress}
+              activeOpacity={0.9}
+              accessibilityLabel="Membership Barcode"
+            >
+              <View style={styles.cardContent}>
+                <View style={styles.cardIconContainer}>
+                  <Ionicons name="qr-code-outline" size={48} color={COLORS.membershipText} />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={[styles.cardTitle, { color: COLORS.membershipText }]}>Membership</Text>
+                  <Text style={[styles.cardSubtitle, { color: `${COLORS.membershipText}CC` }]}>Show your QR code</Text>
+                </View>
+                <View style={styles.cardArrow}>
+                  <Ionicons name="arrow-forward" size={20} color={COLORS.membershipText} />
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+
+          <Animated.View style={{ transform: [{ scale: scaleAnim2 }] }}>
+            <TouchableOpacity
+              style={[styles.menuCard, styles.contactCard]}
+              onPress={handleContactPress}
+              activeOpacity={0.9}
+              accessibilityLabel="Contact"
+            >
+              <View style={styles.cardContent}>
+                <View style={styles.cardIconContainer}>
+                  <Ionicons name="mail-outline" size={48} color={COLORS.contactText} />
+                </View>
+                <View style={styles.cardTextContainer}>
+                  <Text style={[styles.cardTitle, { color: COLORS.contactText }]}>Contact</Text>
+                  <Text style={[styles.cardSubtitle, { color: `${COLORS.contactText}CC` }]}>Get in touch</Text>
+                </View>
+                <View style={styles.cardArrow}>
+                  <Ionicons name="arrow-forward" size={20} color={COLORS.contactText} />
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+
+        {/* Bottom Stats */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Ionicons name="time-outline" size={20} color={COLORS.textSecondary} />
+            <Text style={styles.statText}>Active member</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.success} />
+            <Text style={styles.statText}>Verified</Text>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Toast Notification */}
+      {showToastState && (
+        <Animated.View 
+          style={[
+            styles.toast,
+            { backgroundColor: getToastColor() }
+          ]}
+        >
+          <Ionicons 
+            name={toastType === 'success' ? 'checkmark-circle' : toastType === 'error' ? 'alert-circle' : 'information-circle'} 
+            size={20} 
+            color="#ffffff" 
+          />
+          <Text style={styles.toastText}>{toastMsg}</Text>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -136,95 +282,179 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContent: {
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 16,
+    marginTop: 20,
     fontSize: 16,
-    color: '#666666',
-  },
-  header: {
-    alignItems: 'center',
-    paddingTop: 24,
-    paddingBottom: 20,
-  },
-  title: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 24,
-    lineHeight: 36,
-    letterSpacing: -0.24,
-    color: '#000000',
-    textAlign: 'center',
-  },
-  welcomeText: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 14,
-    color: '#3AABD2',
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  logoutButton: {
-    backgroundColor: '#FF6B6B',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  logoutButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 86,
-    paddingTop: 56,
-    gap: 30,
+    paddingHorizontal: 20,
+  },
+  header: {
+    marginTop: 20,
+    marginBottom: 40,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  titleContainer: {
+    flex: 1,
+  },
+  logo: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: COLORS.text,
+    letterSpacing: -1,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  logoutButton: {
+    padding: 12,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  welcomeContainer: {
+    backgroundColor: COLORS.surface,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  welcomeText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginTop: 4,
+  },
+  menuContainer: {
+    flex: 1,
+    gap: 20,
   },
   menuCard: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 3,
-    borderColor: 'rgba(176, 176, 176, 0.5)',
     borderRadius: 20,
-    height: 108,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    minHeight: 140,
+  },
+  membershipCard: {
+    backgroundColor: COLORS.cardBackground,
+  },
+  contactCard: {
+    backgroundColor: COLORS.cardBackground,
   },
   cardContent: {
+    padding: 24,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    minHeight: 140,
   },
-  cardIcon: {
-    width: 65,
-    height: 65,
+  cardIconContainer: {
+    marginRight: 16,
+  },
+  cardTextContainer: {
+    flex: 1,
   },
   cardTitle: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 16,
-    lineHeight: 22,
-    color: '#3AABD2',
-    textAlign: 'center',
-    position: 'absolute',
-    bottom: 12,
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 4,
   },
-  homeIndicator: {
+  cardSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  cardArrow: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    padding: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  statItem: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: 21,
+    gap: 8,
   },
-  homeIndicatorBar: {
-    width: 134,
-    height: 5,
-    backgroundColor: '#000000',
-    borderRadius: 100,
+  statDivider: {
+    width: 1,
+    backgroundColor: COLORS.textSecondary,
+    opacity: 0.2,
+    marginHorizontal: 20,
+  },
+  statText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  toast: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 12,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  toastText: {
+    fontSize: 15,
+    color: '#ffffff',
+    fontWeight: '600',
+    flex: 1,
   },
 });

@@ -1,94 +1,45 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
 
 export default function Welcome() {
-  const { user, loading, getUserData } = useAuth();
-  const [checkingProfile, setCheckingProfile] = useState(true);
-
-  useEffect(() => {
-    const check = async () => {
-      console.log('🔄 Welcome useEffect:', { user: user?.uid || 'null', loading });
-      if (!loading) {
-        if (user) {
-          setCheckingProfile(true);
-          const profile = await getUserData();
-          if (!profile) {
-            router.replace({ pathname: '/signup', params: { phone: user?.phoneNumber || '' } });
-          } else {
-            router.replace('/');
-          }
-        } else {
-          setCheckingProfile(false);
-        }
-      }
-    };
-    check();
-  }, [user, loading]);
-  const handleLoginPress = () => {
-    router.push('/login');
-  };
-
   const handleSignUpPress = () => {
-    router.push('/signup-phone');
+    router.push('/phone-auth');
   };
-
-  if (loading || checkingProfile) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-        <View style={styles.content}>
-          <Text style={styles.title}>Manga Lounge</Text>
-          <Text style={styles.subtitle}>読み込み中...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
+      <StatusBar barStyle="light-content" backgroundColor="#3A4A5C" />
       <View style={styles.content}>
-        {/* Logo/Title Section */}
-        <View style={styles.logoSection}>
-          <Text style={styles.title}>Manga Lounge</Text>
-          <Text style={styles.subtitle}>マンガを楽しむための会員アプリ</Text>
+        {/* Top spacer (smaller) */}
+        <View style={{ flex: 0.7 }} />
+        {/* Logo and subtitle with wide margin */}
+        <View style={styles.topTextBlock}>
+          <Text style={styles.logo}>Manga Lounge</Text>
         </View>
-
-        {/* Illustration or Icon */}
-        <View style={styles.illustrationSection}>
-          <View style={styles.illustrationPlaceholder}>
-            <Text style={styles.illustrationIcon}>📚</Text>
-            <Text style={styles.illustrationText}>読書体験をもっと便利に</Text>
-          </View>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.buttonSection}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleLoginPress}>
-            <Text style={styles.primaryButtonText}>ログイン</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleSignUpPress}>
-            <Text style={styles.secondaryButtonText}>新規登録</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Debug button removed */}
-      </View>
-
-      {/* Home Indicator */}
-      <View style={styles.homeIndicator}>
-        <View style={styles.homeIndicatorBar} />
+        {/* Bottom spacer (larger) */}
+        <View style={{ flex: 1.3 }} />
+        {/* Continue with phone button */}
+        <TouchableOpacity style={styles.phoneButton} onPress={handleSignUpPress}>
+          <Ionicons name="call" size={22} color="#fff" style={{ marginRight: 10 }} />
+          <Text style={styles.phoneButtonText}>Continue with phone</Text>
+        </TouchableOpacity>
+        {/* Privacy note */}
+        <Text style={styles.privacyNote}>
+          We'll never share anything without your permission
+        </Text>
+        {/* Terms and Privacy */}
+        <Text style={styles.termsText}>
+          By signing up, you agree to our <Text style={styles.link}>Terms and Conditions</Text>. Learn how we use your data in our <Text style={styles.link}>Privacy Policy</Text>
+        </Text>
       </View>
     </SafeAreaView>
   );
@@ -97,87 +48,76 @@ export default function Welcome() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F7F5F3', // warm cream/off-white
   },
   content: {
     flex: 1,
-    padding: 32,
-    justifyContent: 'space-between',
-  },
-  logoSection: {
-    alignItems: 'center',
-    marginTop: 80,
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#000000',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-  },
-  illustrationSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
+    paddingHorizontal: 24,
   },
-  illustrationPlaceholder: {
+  topTextBlock: {
+    width: '100%',
+    paddingHorizontal: 44, // wide margin for top text
     alignItems: 'center',
-    padding: 40,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 24,
-    minWidth: 200,
   },
-  illustrationIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+  logo: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#2D1B14', // espresso brown
+    marginBottom: 8, // tighter vertical gap
+    letterSpacing: -2, // more balanced spacing
+    textAlign: 'center', // ensure perfectly centered
   },
-  illustrationText: {
-    fontSize: 16,
-    color: '#3AABD2',
-    fontWeight: '500',
+  subtitle: {
+    fontSize: 18,
+    color: '#6B4E3D', // medium brown
     textAlign: 'center',
+    marginBottom: 48,
+    fontWeight: '500',
+    letterSpacing: 0.3,
   },
-  buttonSection: {
-    gap: 16,
-    marginBottom: 40,
-  },
-  primaryButton: {
-    backgroundColor: '#3AABD2',
-    padding: 18,
-    borderRadius: 12,
+  phoneButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#5A8A7A', // sage green
+    borderRadius: 32,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    marginBottom: 32,
+    width: '100%',
+    justifyContent: 'center',
+    shadowColor: '#2D1B14',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  primaryButtonText: {
-    color: '#FFFFFF',
+  phoneButtonText: {
+    color: '#F7F5F3',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    letterSpacing: 0.4,
   },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#3AABD2',
-    padding: 18,
-    borderRadius: 12,
-    alignItems: 'center',
+  privacyNote: {
+    color: '#222', // black
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 16,
+    marginTop: 16,
+    fontWeight: '500',
   },
-  secondaryButtonText: {
-    color: '#3AABD2',
-    fontSize: 18,
-    fontWeight: 'bold',
+  termsText: {
+    color: '#222', // black
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 19,
+    fontWeight: '400',
   },
-  homeIndicator: {
-    alignItems: 'center',
-    paddingBottom: 21,
-  },
-  homeIndicatorBar: {
-    width: 134,
-    height: 5,
-    backgroundColor: '#000000',
-    borderRadius: 100,
+  link: {
+    color: '#5A8A7A', // matching button color
+    textDecorationLine: 'underline',
+    fontWeight: '600',
   },
 }); 

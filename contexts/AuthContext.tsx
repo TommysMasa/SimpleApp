@@ -1,11 +1,14 @@
 import {
+    ConfirmationResult,
     EmailAuthProvider,
+    RecaptchaVerifier,
     User,
     createUserWithEmailAndPassword,
     linkWithCredential,
     onAuthStateChanged,
     sendPasswordResetEmail,
     signInWithEmailAndPassword,
+    signInWithPhoneNumber,
     signOut,
     updateProfile
 } from 'firebase/auth';
@@ -44,6 +47,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   getUserData: () => Promise<UserData | null>;
+  sendPhoneVerification: (phoneNumber: string) => Promise<ConfirmationResult>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -109,6 +113,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     // 最大試行回数に達した場合、フォールバック
     throw new Error('ユニークなmembershipIDの生成に失敗しました');
+  };
+
+  const sendPhoneVerification = async (phoneNumber: string): Promise<ConfirmationResult> => {
+    try {
+      // Create RecaptchaVerifier
+      const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: (response: any) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber
+        },
+        'expired-callback': () => {
+          // Response expired. Ask user to solve reCAPTCHA again.
+        }
+      });
+
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+      return confirmationResult;
+    } catch (error: any) {
+      console.error('Phone verification error:', error);
+      throw error;
+    }
   };
 
   const signUp = async (userData: UserRegistrationData) => {
@@ -223,6 +248,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     resetPassword,
     getUserData,
+    sendPhoneVerification,
   };
 
   return (

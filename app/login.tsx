@@ -12,12 +12,16 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { ToastType } from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<ToastType>('info');
   
   const { user, signIn } = useAuth();
 
@@ -34,6 +38,12 @@ export default function Login() {
     } else {
       Alert.alert(title, message);
     }
+  };
+
+  const showToast = (message: string, type: ToastType = 'info') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
   };
 
   const handleLogin = async () => {
@@ -86,6 +96,10 @@ export default function Login() {
 
   const handleSignUpNavigation = () => {
     router.push('/signup');
+  };
+
+  const handlePhoneAuth = () => {
+    router.push('/phone-auth');
   };
 
   // すでにログインしている場合
@@ -143,6 +157,19 @@ export default function Login() {
             onPress={handleSignUpNavigation}
           >
             <Text style={styles.linkText}>アカウントをお持ちでない方はこちら</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>または</Text>
+            <View style={styles.dividerLine} />
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.phoneButton}
+            onPress={handlePhoneAuth}
+          >
+            <Text style={styles.phoneButtonText}>📱 電話番号でログイン</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -218,5 +245,33 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#3AABD2',
     fontSize: 14,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  phoneButton: {
+    backgroundColor: '#F3F4F6',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  phoneButtonText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 
