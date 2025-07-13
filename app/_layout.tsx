@@ -10,6 +10,7 @@ export default function RootLayout() {
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
         <Stack.Screen name="signup-phone" />
+        <Stack.Screen name="signup-code" />
         <Stack.Screen name="barcode" />
       </Stack>
     </AuthProvider>

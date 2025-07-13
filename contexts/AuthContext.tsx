@@ -1,6 +1,8 @@
 import {
+    EmailAuthProvider,
     User,
     createUserWithEmailAndPassword,
+    linkWithCredential,
     onAuthStateChanged,
     sendPasswordResetEmail,
     signInWithEmailAndPassword,
@@ -112,16 +114,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signUp = async (userData: UserRegistrationData) => {
     try {
       const { firstName, lastName, dateOfBirth, gender, email, password, phone } = userData;
+      // phoneは10桁数字だけで保存する（+1など国番号は除去）
+      const phone10 = phone.replace(/[^0-9]/g, '').slice(-10);
       const displayName = `${firstName} ${lastName}`;
 
       console.log('🔄 サインアップ開始:', { email, firstName, lastName, dateOfBirth, gender });
-      // Firebase Authenticationでユーザー作成
-      const { user } = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('✅ Firebase Auth ユーザー作成成功:', user.uid);
 
-      // Update user profile with display name
-      await updateProfile(user, { displayName });
-      console.log('✅ ユーザープロフィール更新成功');
+      let currentUser = auth.currentUser;
+      if (currentUser && currentUser.phoneNumber) {
+        // 電話番号認証済みユーザーが存在する場合はメール認証をリンク
+        const credential = EmailAuthProvider.credential(email, password);
+        await linkWithCredential(currentUser, credential);
+        await updateProfile(currentUser, { displayName });
+        console.log('✅ 電話番号ユーザーにメール認証をリンク');
+      } else {
+        // 通常のメールアドレス新規登録
+        const { user } = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(user, { displayName });
+        currentUser = user;
+        console.log('✅ Firebase Auth ユーザー作成成功:', user.uid);
+      }
 
       // 完全にユニークなmembershipID生成（重複チェック付き）
       const membershipId = await generateUniqueMembershipId();
@@ -134,7 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         dateOfBirth,
         gender,
         email,
-        phone, // 再び送信する
+        phone: phone10, // 10桁数字だけで保存
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         membershipId,
@@ -142,7 +154,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
 
       // Create user document in Firestore with all user data
-      await setDoc(doc(db, 'users', user.uid), firestoreData);
+      await setDoc(doc(db, 'users', currentUser.uid), firestoreData);
       console.log('✅ Firestore ユーザードキュメント作成成功');
 
     } catch (error) {

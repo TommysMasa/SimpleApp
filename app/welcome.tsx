@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     SafeAreaView,
     StatusBar,
@@ -11,15 +11,27 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Welcome() {
-  const { user, loading } = useAuth();
+  const { user, loading, getUserData } = useAuth();
+  const [checkingProfile, setCheckingProfile] = useState(true);
 
   useEffect(() => {
-    console.log('🔄 Welcome useEffect:', { user: user?.uid || 'null', loading });
-    if (!loading && user) {
-      // ユーザーがログイン済みの場合はメニュー画面へ
-      console.log('✅ Welcome: ログイン済みユーザーをメニューにリダイレクト');
-      router.replace('/');
-    }
+    const check = async () => {
+      console.log('🔄 Welcome useEffect:', { user: user?.uid || 'null', loading });
+      if (!loading) {
+        if (user) {
+          setCheckingProfile(true);
+          const profile = await getUserData();
+          if (!profile) {
+            router.replace({ pathname: '/signup', params: { phone: user?.phoneNumber || '' } });
+          } else {
+            router.replace('/');
+          }
+        } else {
+          setCheckingProfile(false);
+        }
+      }
+    };
+    check();
   }, [user, loading]);
   const handleLoginPress = () => {
     router.push('/login');
@@ -28,6 +40,18 @@ export default function Welcome() {
   const handleSignUpPress = () => {
     router.push('/signup-phone');
   };
+
+  if (loading || checkingProfile) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.content}>
+          <Text style={styles.title}>Manga Lounge</Text>
+          <Text style={styles.subtitle}>読み込み中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

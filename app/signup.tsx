@@ -33,8 +33,9 @@ export default function SignUp() {
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(true);
 
-  const { user, signUp } = useAuth();
+  const { user, signUp, getUserData } = useAuth();
 
   const genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
   
@@ -70,14 +71,7 @@ export default function SignUp() {
   );
 
   useEffect(() => {
-    // すでにログインしている場合はメニュー画面へ
-    if (user) {
-      router.replace('/');
-    }
-  }, [user]);
-
-  // 月が変更されたときに日をリセット
-  useEffect(() => {
+    // 月が変更されたときに日をリセット
     if (birthYear && birthMonth && birthDay) {
       const maxDays = getDaysInMonth(birthYear, birthMonth);
       if (parseInt(birthDay) > maxDays) {
@@ -140,6 +134,7 @@ export default function SignUp() {
     try {
       await signUp(userData);
       console.log('✅ Signup successful');
+      router.replace('/');
       
     } catch (error) {
       console.error('❌ Signup error:', error);
@@ -183,20 +178,13 @@ export default function SignUp() {
     setShowDayPicker(false);
   };
 
-  // すでにログインしている場合
-  if (user) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3AABD2" />
-        <Text style={styles.loadingText}>Moving to menu...</Text>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
+      {/* ホームに戻るボタン */}
+      <TouchableOpacity style={styles.homeButton} onPress={() => router.replace('/')}> 
+        <Text style={styles.homeButtonText}>ホームに戻る</Text>
+      </TouchableOpacity>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <Text style={styles.title}>Manga Lounge</Text>
@@ -645,5 +633,19 @@ const styles = StyleSheet.create({
     height: 5,
     backgroundColor: '#000000',
     borderRadius: 100,
+  },
+  homeButton: {
+    backgroundColor: '#3AABD2',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  homeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 }); 

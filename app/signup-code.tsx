@@ -1,26 +1,17 @@
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
-import { router } from 'expo-router';
-import { ApplicationVerifier, getAuth, signInWithPhoneNumber } from 'firebase/auth';
-import React, { useRef, useState } from 'react';
-import {
-  Alert,
-  Platform,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { getAuth, PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
+import React, { useState } from 'react';
+import { Alert, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import app from '../firebaseConfig';
 
-export default function SignUpPhone() {
-  const recaptchaVerifier = useRef<FirebaseRecaptchaVerifierModal | null>(null);
-  const [phone, setPhone] = useState('');
+export default function SignUpCode() {
+  const params = useLocalSearchParams();
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const auth = getAuth(app);
+  const verificationId = params.verificationId as string;
+  const phone = params.phone as string;
 
   const showAlert = (title: string, message: string) => {
     if (Platform.OS === 'web') {
@@ -30,26 +21,23 @@ export default function SignUpPhone() {
     }
   };
 
-  const handleSendSMS = async () => {
-    // アメリカの電話番号のみ対応
-    if (phone.length !== 10) {
-      showAlert('エラー', '10桁のアメリカの電話番号を入力してください（例: 5551234567）');
+  const handleVerify = async () => {
+    if (!code || !verificationId) {
+      showAlert('エラー', '認証コードを入力してください');
       return;
     }
     setLoading(true);
     setMessage('');
     try {
+      const credential = PhoneAuthProvider.credential(verificationId, code);
+      await signInWithCredential(auth, credential);
+      setMessage('認証に成功しました');
       // Firestore検索は不要なので削除
-      const cleaned = '+1' + phone;
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        cleaned,
-        recaptchaVerifier.current as unknown as ApplicationVerifier
-      );
-      setMessage('SMSコードを送信しました');
-      router.push({ pathname: '/signup-code', params: { verificationId: confirmation.verificationId, phone: cleaned } } as any);
+      // 認証後、プロフィール入力画面にphoneを渡して遷移
+      const phone10 = phone.replace(/[^0-9]/g, '').slice(-10);
+      router.replace({ pathname: '/signup', params: { phone: phone10 } } as any);
     } catch (err: any) {
-      showAlert('エラー', err.message || String(err));
+      setMessage(`エラー: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -59,30 +47,26 @@ export default function SignUpPhone() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       {/* ホームに戻るボタン */}
-      <TouchableOpacity style={styles.homeButton} onPress={() => router.replace('/')}>
+      <TouchableOpacity style={styles.homeButton} onPress={() => router.replace('/')}> 
         <Text style={styles.homeButtonText}>ホームに戻る</Text>
       </TouchableOpacity>
-      <FirebaseRecaptchaVerifierModal
-        ref={recaptchaVerifier}
-        firebaseConfig={app.options}
-      />
       <View style={styles.content}>
-        <Text style={styles.title}>Manga Lounge</Text>
-        <Text style={styles.subtitle}>新規登録 - 電話番号入力</Text>
+        <Text style={styles.title}>認証コード入力</Text>
+        <Text style={styles.subtitle}>SMSで届いた6桁の認証コードを入力してください</Text>
         <TextInput
           style={styles.input}
-          placeholder="電話番号（例: 5551234567）"
-          value={phone}
-          onChangeText={text => setPhone(text.replace(/[^0-9]/g, ''))}
+          placeholder="認証コード"
+          value={code}
+          onChangeText={setCode}
           keyboardType="number-pad"
-          autoComplete="tel"
+          maxLength={6}
         />
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleSendSMS}
+          onPress={handleVerify}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>認証コード送信</Text>
+          <Text style={styles.buttonText}>認証</Text>
         </TouchableOpacity>
         {message ? <Text style={{ color: '#3AABD2', marginTop: 16 }}>{message}</Text> : null}
       </View>
@@ -121,6 +105,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     width: '100%',
     backgroundColor: '#FAFAFA',
+    textAlign: 'center',
+    letterSpacing: 8,
   },
   button: {
     backgroundColor: '#3AABD2',

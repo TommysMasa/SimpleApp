@@ -1,18 +1,30 @@
 import { router } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Index() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, getUserData } = useAuth();
+  const [checkingProfile, setCheckingProfile] = useState(true);
 
   useEffect(() => {
-    console.log('🔄 Index useEffect:', { user: user?.uid || 'null', loading });
-    if (!loading && !user) {
-      // ユーザーがログインしていない場合はウェルカム画面へ
-      console.log('✅ Index: 未ログインユーザーをwelcomeにリダイレクト');
-      router.replace('/welcome');
-    }
+    const check = async () => {
+      console.log('🔄 Index useEffect:', { user: user?.uid || 'null', loading });
+      if (!loading) {
+        if (!user) {
+          router.replace('/welcome');
+        } else {
+          setCheckingProfile(true);
+          const profile = await getUserData();
+          if (!profile) {
+            router.replace({ pathname: '/signup', params: { phone: user?.phoneNumber || '' } });
+          } else {
+            setCheckingProfile(false);
+          }
+        }
+      }
+    };
+    check();
   }, [user, loading]);
 
   const handleMembershipPress = () => {
@@ -63,7 +75,7 @@ export default function Index() {
   };
 
   // 認証状態をチェック中の場合
-  if (loading) {
+  if (loading || checkingProfile) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3AABD2" />
@@ -72,24 +84,14 @@ export default function Index() {
     );
   }
 
-  // ユーザーがログインしていない場合（一瞬表示される可能性があるため）
-  if (!user) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>リダイレクト中...</Text>
-      </SafeAreaView>
-    );
-  }
-
+  // userがnullの場合はここに到達しない（useEffectでリダイレクト済み）
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Manga Lounge</Text>
-        <Text style={styles.welcomeText}>ようこそ、{user.displayName || user.email}さん</Text>
-        
+        <Text style={styles.welcomeText}>ようこそ、{user?.displayName || user?.email}さん</Text>
         {/* ログアウトボタン */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>ログアウト</Text>
