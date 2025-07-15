@@ -48,6 +48,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   getUserData: () => Promise<UserData | null>;
   sendPhoneVerification: (phoneNumber: string) => Promise<ConfirmationResult>;
+  updateUserData: (updates: Partial<UserData>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -240,6 +241,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateUserData = async (updates: Partial<UserData>) => {
+    if (!user) throw new Error('No user logged in');
+    const userRef = doc(db, 'users', user.uid);
+    await setDoc(userRef, {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+    if (updates.firstName || updates.lastName) {
+      const displayName = `${updates.firstName || ''} ${updates.lastName || ''}`.trim();
+      if (displayName) {
+        await updateProfile(user, { displayName });
+      }
+    }
+  };
+
   const value: AuthContextType = {
     user,
     loading,
@@ -249,6 +265,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     resetPassword,
     getUserData,
     sendPhoneVerification,
+    updateUserData,
   };
 
   return (

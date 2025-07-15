@@ -100,8 +100,8 @@ export default function Index() {
     router.push('/barcode');
   };
 
-  const handleContactPress = () => {
-    router.push('/contact');
+  const handleSettingsPress = () => {
+    router.push('/settings');
   };
 
   const displayToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -225,17 +225,17 @@ export default function Index() {
           <Animated.View style={{ transform: [{ scale: scaleAnim2 }] }}>
             <TouchableOpacity
               style={[styles.menuCard, styles.contactCard]}
-              onPress={handleContactPress}
+              onPress={handleSettingsPress}
               activeOpacity={0.9}
-              accessibilityLabel="Contact"
+              accessibilityLabel="Settings"
             >
               <View style={styles.cardContent}>
                 <View style={styles.cardIconContainer}>
-                  <Ionicons name="mail-outline" size={48} color={COLORS.contactText} />
+                  <Ionicons name="settings-outline" size={48} color={COLORS.contactText} />
                 </View>
                 <View style={styles.cardTextContainer}>
-                  <Text style={[styles.cardTitle, { color: COLORS.contactText }]}>Contact</Text>
-                  <Text style={[styles.cardSubtitle, { color: `${COLORS.contactText}CC` }]}>Get in touch</Text>
+                  <Text style={[styles.cardTitle, { color: COLORS.contactText }]}>Settings</Text>
+                  <Text style={[styles.cardSubtitle, { color: `${COLORS.contactText}CC` }]}>Manage your account</Text>
                 </View>
                 <View style={styles.cardArrow}>
                   <Ionicons name="arrow-forward" size={20} color={COLORS.contactText} />

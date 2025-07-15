@@ -4,6 +4,7 @@ import { getAuth, signInWithPhoneNumber } from 'firebase/auth';
 import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   SafeAreaView,
@@ -188,8 +189,8 @@ export default function PhoneAuth() {
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
             <Text style={styles.privacyText}>
               By continuing, you agree to our{' '}
-              <Text style={styles.linkText}>Terms of Service</Text> and{' '}
-              <Text style={styles.linkText}>Privacy Policy</Text>
+              <Text style={styles.linkText} onPress={() => Linking.openURL('https://docs.google.com/document/d/1MzkEqOgJxMN331SuUivt8S8Fs_7lqrz1pCqsijoE3Tw/edit?usp=sharing')}>Terms of Service</Text> and{' '}
+              <Text style={styles.linkText} onPress={() => Linking.openURL('https://docs.google.com/document/d/14t9aHzjedxMGTB7-3JncpY0ARyljt3pzFv3b87Oe7z8/edit?usp=sharing')}>Privacy Policy</Text>
             </Text>
             <View style={styles.buttonContainer}>
               <TouchableOpacity

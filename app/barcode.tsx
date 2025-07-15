@@ -149,14 +149,18 @@ export default function Barcode() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.replace('/')}
-            accessibilityLabel="Back to Menu"
+            onPress={() => router.back()}
+            accessibilityLabel="Back"
           >
-            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+            <View style={styles.backButtonCircle}>
+              <Ionicons name="arrow-back" size={24} color="#222" />
+            </View>
           </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.title}>Manga Lounge</Text>
-            <Text style={styles.subtitle}>Membership Card</Text>
+          <View style={styles.headerTop}>
+            <View style={styles.headerCenter}>
+              <Text style={styles.title}>Manga Lounge</Text>
+              <Text style={styles.subtitle}>Membership Card</Text>
+            </View>
           </View>
           <View style={styles.headerSpacer} />
         </View>
@@ -216,16 +220,6 @@ export default function Barcode() {
             <Text style={[styles.detailValue, { color: COLORS.success }]}>Active</Text>
           </View>
         </View>
-
-        {/* Back Button */}
-        <TouchableOpacity 
-          style={styles.mainBackButton} 
-          onPress={() => router.replace('/')}
-          accessibilityLabel="Back to Menu"
-        >
-          <Ionicons name="arrow-back" size={20} color={COLORS.surface} />
-          <Text style={styles.mainBackButtonText}>Back to Menu</Text>
-        </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>
   );
@@ -300,14 +294,30 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   backButton: {
-    padding: 8,
-    backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    shadowColor: COLORS.shadow,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 10,
+    padding: 12,
+  },
+  backButtonCircle: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
   },
   headerCenter: {
     alignItems: 'center',
