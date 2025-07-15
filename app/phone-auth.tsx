@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import { getAuth, signInWithPhoneNumber } from 'firebase/auth';
 import React, { useRef, useState } from 'react';
 import {
-  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -14,8 +13,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+  View
 } from 'react-native';
 import { Country, CountryPicker } from '../components/CountryPicker';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -42,25 +40,20 @@ export default function PhoneAuth() {
   const auth = getAuth(app);
   const { sendPhoneVerification } = useAuth();
   const [showRecaptchaIntro, setShowRecaptchaIntro] = useState(false);
+  const [slot1, setSlot1] = useState('');
+  const [slot2, setSlot2] = useState('');
+  const [slot3, setSlot3] = useState('');
+  const slot1Ref = useRef<TextInput>(null);
+  const slot2Ref = useRef<TextInput>(null);
+  const slot3Ref = useRef<TextInput>(null);
 
-  // キーボードを閉じる
-  const dismissKeyboard = () => {
-    inputRef.current?.blur();
-    Keyboard.dismiss();
-  };
-
-  // 電話番号のバリデーション
+  // バリデーションも10桁のみ
   const validatePhoneNumber = (phone: string) => {
     const cleaned = phone.replace(/\D/g, '');
-    if (selectedCountry.code === 'JP') {
-      // 日本の携帯番号: 11桁、070/080/090
-      return cleaned.length === 11 && /^(070|080|090)/.test(cleaned);
-    }
-    // 他国は10-15桁
-    return cleaned.length >= 10 && cleaned.length <= 15;
+    return cleaned.length === 10;
   };
 
-  // 入力時のフォーマット
+  // 入力時のフォーマット（JPのみ使用）
   const formatPhoneNumber = (text: string) => {
     const cleaned = text.replace(/\D/g, '');
     if (selectedCountry.code === 'JP') {
@@ -68,32 +61,22 @@ export default function PhoneAuth() {
       if (cleaned.length <= 7) return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
       return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`;
     }
-    if (selectedCountry.code === 'US') {
-      // US: (XXX) XXX-XXXX
-      if (cleaned.length <= 3) return cleaned;
-      if (cleaned.length <= 6) return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
-      if (cleaned.length <= 10) return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
-      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
-    }
     return cleaned;
   };
 
-  const handlePhoneNumberChange = (text: string) => {
-    setError('');
-    setPhoneNumber(formatPhoneNumber(text));
-  };
+  // 日本の番号用: onChangeTextは不要なので削除
 
   const handleContinue = () => {
-    dismissKeyboard();
     if (!phoneNumber) {
       setError('Please enter your phone number.');
       return;
     }
-    if (!validatePhoneNumber(phoneNumber)) {
-      setError('Invalid phone number.');
+    if (phoneNumber.length !== 10) {
+      setError('Invalid phone number. Enter 10 digits.');
       return;
     }
     setShowRecaptchaIntro(true);
+    // Keyboard.dismiss()やdismissKeyboard()は呼ばない
   };
 
   // reCAPTCHAとSMS送信を実行
@@ -102,6 +85,7 @@ export default function PhoneAuth() {
     setLoading(true);
     setError('');
     try {
+      // どの国でも「国番号＋数字だけの電話番号」で送信
       const cleaned = phoneNumber.replace(/\D/g, '');
       const fullPhoneNumber = `${selectedCountry.dialCode}${cleaned}`;
       const confirmation = await signInWithPhoneNumber(
@@ -153,14 +137,13 @@ export default function PhoneAuth() {
         firebaseConfig={app.options}
         attemptInvisibleVerification={false}
       />
-      <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <ScrollView
             contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="never"
+          keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
           >
             <View style={styles.header}>
@@ -168,6 +151,7 @@ export default function PhoneAuth() {
               <Text style={styles.subtitle}>We'll send a verification code to this number</Text>
             </View>
             <View style={styles.phoneInputContainer}>
+            {/* CountryPickerはそのまま */}
               <CountryPicker
                 selectedCountry={selectedCountry}
                 onCountrySelect={setSelectedCountry}
@@ -177,21 +161,27 @@ export default function PhoneAuth() {
                 ref={inputRef}
                 style={[styles.phoneInput, error && styles.inputError]}
                 value={phoneNumber}
-                onChangeText={handlePhoneNumberChange}
+              onChangeText={text => {
+                setError('');
+                const cleaned = text.replace(/\D/g, '');
+                setPhoneNumber(cleaned);
+              }}
                 placeholder="Phone number"
                 placeholderTextColor="#9CA3AF"
-                keyboardType="phone-pad"
-                maxLength={selectedCountry.code === 'JP' ? 13 : 14}
+              keyboardType="number-pad"
+              maxLength={20}
                 returnKeyType="done"
                 onSubmitEditing={handleContinue}
                 blurOnSubmit={true}
                 autoFocus
+              autoComplete="tel"
+              textContentType="telephoneNumber"
                 {...accessibilityHelpers.getFormFieldProps({
                   label: 'Phone number',
                   value: phoneNumber,
                   placeholder: 'Phone number',
                   required: true,
-                  keyboardType: 'phone-pad',
+                keyboardType: 'number-pad',
                 })}
               />
             </View>
@@ -203,9 +193,9 @@ export default function PhoneAuth() {
             </Text>
             <View style={styles.buttonContainer}>
               <TouchableOpacity
-                style={[styles.continueButton, (!phoneNumber || loading) && styles.continueButtonDisabled]}
+                style={[styles.continueButton, (phoneNumber.replace(/\D/g, '').length !== 10 || loading) && styles.continueButtonDisabled]}
                 onPress={handleContinue}
-                disabled={!phoneNumber || loading}
+                disabled={phoneNumber.replace(/\D/g, '').length !== 10 || loading}
                 {...accessibilityHelpers.getLoadingButtonProps('Continue', loading)}
               >
                 {loading ? (
@@ -217,7 +207,6 @@ export default function PhoneAuth() {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
       <Toast
         visible={toastVisible}
         message={toastMessage}

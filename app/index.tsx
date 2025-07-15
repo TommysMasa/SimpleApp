@@ -101,7 +101,7 @@ export default function Index() {
   };
 
   const handleContactPress = () => {
-    displayToast('Contact feature coming soon!', 'info');
+    router.push('/contact');
   };
 
   const displayToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
