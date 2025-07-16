@@ -77,12 +77,14 @@ interface CountryPickerProps {
   selectedCountry: Country;
   onCountrySelect: (country: Country) => void;
   style?: any;
+  showFlag?: boolean;
 }
 
 export const CountryPicker: React.FC<CountryPickerProps> = ({
   selectedCountry,
   onCountrySelect,
   style,
+  showFlag = true,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -105,7 +107,7 @@ export const CountryPicker: React.FC<CountryPickerProps> = ({
       style={styles.countryItem}
       onPress={() => handleCountrySelect(item)}
     >
-      <Text style={styles.flag}>{item.flag}</Text>
+      {showFlag && <Text style={styles.flag}>{item.flag}</Text>}
       <View style={styles.countryInfo}>
         <Text style={styles.countryName}>{item.name}</Text>
         <Text style={styles.dialCode}>{item.dialCode}</Text>
@@ -119,7 +121,7 @@ export const CountryPicker: React.FC<CountryPickerProps> = ({
         style={styles.selectedCountry}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={styles.selectedFlag}>{selectedCountry.flag}</Text>
+        {showFlag && <Text style={styles.selectedFlag}>{selectedCountry.flag}</Text>}
         <Text style={styles.selectedDialCode}>{selectedCountry.dialCode}</Text>
         <Text style={styles.chevron}>▼</Text>
       </TouchableOpacity>
@@ -177,19 +179,23 @@ const styles = StyleSheet.create({
   selectedCountry: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    minWidth: 120,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 0,
+    height: 44,
+    minWidth: 0,
   },
   selectedFlag: {
     fontSize: 20,
     marginRight: 8,
   },
   selectedDialCode: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
     color: '#111827',
-    flex: 1,
+    minWidth: 38,
+    textAlign: 'center',
+    marginRight: 2,
   },
   chevron: {
     fontSize: 12,

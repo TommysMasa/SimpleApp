@@ -1,16 +1,13 @@
 import {
-    ConfirmationResult,
-    EmailAuthProvider,
-    RecaptchaVerifier,
-    User,
-    createUserWithEmailAndPassword,
-    linkWithCredential,
-    onAuthStateChanged,
-    sendPasswordResetEmail,
-    signInWithEmailAndPassword,
-    signInWithPhoneNumber,
-    signOut,
-    updateProfile
+  ConfirmationResult,
+  RecaptchaVerifier,
+  User,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPhoneNumber,
+  signOut,
+  updateProfile
 } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -22,7 +19,6 @@ interface UserRegistrationData {
   dateOfBirth: string;
   gender: string;
   email: string;
-  password: string;
   phone: string; // 追加
 }
 
@@ -33,10 +29,13 @@ interface UserData {
   dateOfBirth: string;
   gender: string;
   email: string;
+  phone: string;
   membershipId: string;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
+  isCheckedIn?: boolean;
+  lastEntryTime?: string | null;
 }
 
 interface AuthContextType {
@@ -139,27 +138,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signUp = async (userData: UserRegistrationData) => {
     try {
-      const { firstName, lastName, dateOfBirth, gender, email, password, phone } = userData;
-      // phoneは10桁数字だけで保存する（+1など国番号は除去）
-      const phone10 = phone.replace(/[^0-9]/g, '').slice(-10);
+      const { firstName, lastName, dateOfBirth, gender, email, phone } = userData;
+      // phone は国番号込みの形式 (+81.. など) でそのまま保存する
+      const cleanedPhone = phone.replace(/\s/g, '');
       const displayName = `${firstName} ${lastName}`;
 
       console.log('🔄 サインアップ開始:', { email, firstName, lastName, dateOfBirth, gender });
 
-      let currentUser = auth.currentUser;
-      if (currentUser && currentUser.phoneNumber) {
-        // 電話番号認証済みユーザーが存在する場合はメール認証をリンク
-        const credential = EmailAuthProvider.credential(email, password);
-        await linkWithCredential(currentUser, credential);
-        await updateProfile(currentUser, { displayName });
-        console.log('✅ 電話番号ユーザーにメール認証をリンク');
-      } else {
-        // 通常のメールアドレス新規登録
-        const { user } = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(user, { displayName });
-        currentUser = user;
-        console.log('✅ Firebase Auth ユーザー作成成功:', user.uid);
+      const currentUser = auth.currentUser;
+      if (!currentUser || !currentUser.phoneNumber) {
+        throw new Error('Phone-based user not authenticated');
       }
+      // Update displayName only
+      await updateProfile(currentUser, { displayName });
+      console.log('✅ Phone auth user profile updated');
 
       // 完全にユニークなmembershipID生成（重複チェック付き）
       const membershipId = await generateUniqueMembershipId();
@@ -172,7 +164,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         dateOfBirth,
         gender,
         email,
-        phone: phone10, // 10桁数字だけで保存
+        phone: cleanedPhone, // 国番号込みで保存
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         membershipId,

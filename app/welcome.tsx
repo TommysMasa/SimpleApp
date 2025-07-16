@@ -40,6 +40,10 @@ export default function Welcome() {
         <Text style={styles.termsText}>
           By signing up, you agree to our <Text style={styles.link}>Terms and Conditions</Text>. Learn how we use your data in our <Text style={styles.link}>Privacy Policy</Text>
         </Text>
+        {/* Change Phone Number link */}
+        <Text style={[styles.termsText, { marginBottom: 32 }]}> 
+          <Text style={styles.link} onPress={() => router.push('./change-phone-request')}>Change Phone Number</Text>
+        </Text>
       </View>
     </SafeAreaView>
   );

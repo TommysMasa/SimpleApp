@@ -42,6 +42,8 @@ interface UserData {
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
+  isCheckedIn?: boolean;
+  lastEntryTime?: any;
 }
 
 export default function Barcode() {
@@ -205,19 +207,27 @@ export default function Barcode() {
             <Text style={styles.detailLabel}>ID:</Text>
             <Text style={styles.detailValue}>{userData.membershipId}</Text>
           </View>
-          
           <View style={styles.detailItem}>
-            <Ionicons name="calendar-outline" size={18} color={COLORS.textSecondary} />
-            <Text style={styles.detailLabel}>Member since:</Text>
-            <Text style={styles.detailValue}>
-              {new Date(userData.createdAt).toLocaleDateString('en-US')}
-            </Text>
-          </View>
-          
-          <View style={styles.detailItem}>
-            <Ionicons name="shield-checkmark" size={18} color={COLORS.success} />
+            <Ionicons name={userData.isCheckedIn ? 'walk' : 'walk-outline'} size={18} color={userData.isCheckedIn ? COLORS.success : COLORS.textSecondary} />
             <Text style={styles.detailLabel}>Status:</Text>
-            <Text style={[styles.detailValue, { color: COLORS.success }]}>Active</Text>
+            <Text style={[styles.detailValue, { color: userData.isCheckedIn ? COLORS.success : COLORS.textSecondary }]}> {userData.isCheckedIn ? 'Checked In' : 'Checked Out'} </Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
+            <Text style={styles.detailLabel}>Entry Time:</Text>
+            <Text style={styles.detailValue}>
+              {userData.isCheckedIn && userData.lastEntryTime
+                ? (() => {
+                    let dateObj;
+                    if (userData.lastEntryTime && typeof userData.lastEntryTime === 'object' && typeof userData.lastEntryTime.toDate === 'function') {
+                      dateObj = userData.lastEntryTime.toDate();
+                    } else {
+                      dateObj = new Date(userData.lastEntryTime);
+                    }
+                    return dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                  })()
+                : '-'}
+            </Text>
           </View>
         </View>
       </Animated.View>

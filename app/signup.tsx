@@ -2,26 +2,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    Easing,
-    findNodeHandle,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView as RNScrollView,
-    TextInput as RNTextInput,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    UIManager,
-    View
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Easing,
+  findNodeHandle,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView as RNScrollView,
+  TextInput as RNTextInput,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  UIManager,
+  View
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -55,7 +55,6 @@ export default function SignUp() {
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showDayPicker, setShowDayPicker] = useState(false);
   const [gender, setGender] = useState('');
-  const [password, setPassword] = useState('');
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
@@ -157,28 +156,15 @@ export default function SignUp() {
       email,
       dateOfBirth: formatDateOfBirth(),
       gender,
-      password,
     };
     
-    if (!phone || !firstName || !lastName || !email || !birthYear || !birthMonth || !birthDay || !gender || !password) {
+    if (!phone || !firstName || !lastName || !email || !birthYear || !birthMonth || !birthDay || !gender) {
       showAlert('Error', 'All fields are required');
       return;
     }
 
     if (!privacyAgreed) {
       showAlert('Error', 'You must agree to the privacy policy');
-      return;
-    }
-
-    if (password.length < 6) {
-      showAlert('Error', 'Password must be at least 6 characters long');
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      showAlert('Error', 'Please enter a valid email address');
       return;
     }
 
@@ -473,18 +459,6 @@ export default function SignUp() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Password</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Create a secure password"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    autoComplete="password-new"
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
                   <Text style={styles.label}>Phone Number</Text>
                   <TextInput
                     style={[styles.input, styles.disabledInput]}
@@ -533,7 +507,7 @@ export default function SignUp() {
               
               <TouchableOpacity 
                 style={styles.linkButton}
-                onPress={() => router.push('/login')}
+                onPress={() => router.push('/welcome')}
               >
                 <Text style={styles.linkText}>Already have an account? Sign in</Text>
               </TouchableOpacity>

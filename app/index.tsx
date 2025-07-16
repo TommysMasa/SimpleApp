@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -46,6 +46,8 @@ export default function Index() {
   const [slideAnim] = useState(new Animated.Value(50));
   const [scaleAnim1] = useState(new Animated.Value(0.8));
   const [scaleAnim2] = useState(new Animated.Value(0.8));
+  const [profile, setProfile] = useState<any>(null);
+  const navigation = useNavigation();
 
   useEffect(() => {
     const check = async () => {
@@ -54,10 +56,11 @@ export default function Index() {
           router.replace('/welcome');
         } else {
           setCheckingProfile(true);
-          const profile = await getUserData();
-          if (!profile) {
+          const profileData = await getUserData();
+          if (!profileData) {
             router.replace({ pathname: '/signup', params: { phone: user?.phoneNumber || '' } });
           } else {
+            setProfile(profileData);
             setCheckingProfile(false);
             // 画面表示アニメーション開始
             Animated.parallel([
@@ -95,6 +98,17 @@ export default function Index() {
     };
     check();
   }, [user, loading]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', async () => {
+      if (!user) return;
+      setCheckingProfile(true);
+      const profileData = await getUserData();
+      setProfile(profileData);
+      setCheckingProfile(false);
+    });
+    return unsubscribe;
+  }, [navigation, user]);
 
   const handleMembershipPress = () => {
     router.push('/barcode');
@@ -246,15 +260,28 @@ export default function Index() {
         </View>
 
         {/* Bottom Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Ionicons name="time-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.statText}>Active member</Text>
+        <View style={{ flexDirection: 'row', gap: 16, marginBottom: 20 }}>
+          <View style={{ flex: 1, backgroundColor: COLORS.surface, borderRadius: 16, paddingVertical: 24, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 }}>
+            <Ionicons name={profile?.isCheckedIn ? 'walk' : 'walk-outline'} size={32} color={profile?.isCheckedIn ? COLORS.success : COLORS.textSecondary} style={{ marginBottom: 10 }} />
+            <Text style={{ fontSize: 15, color: COLORS.textSecondary, fontWeight: '500', marginBottom: 2, letterSpacing: 0.2 }}>Status</Text>
+            <Text style={{ fontSize: 18, color: COLORS.text, fontWeight: '700', letterSpacing: 0.3 }}>{profile?.isCheckedIn ? 'Checked In' : 'Checked Out'}</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.success} />
-            <Text style={styles.statText}>Verified</Text>
+          <View style={{ flex: 1, backgroundColor: COLORS.surface, borderRadius: 16, paddingVertical: 24, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 }}>
+            <Ionicons name="time-outline" size={32} color={COLORS.textSecondary} style={{ marginBottom: 10 }} />
+            <Text style={{ fontSize: 15, color: COLORS.textSecondary, fontWeight: '500', marginBottom: 2, letterSpacing: 0.2 }}>Entry Time</Text>
+            <Text style={{ fontSize: 18, color: COLORS.text, fontWeight: '700', letterSpacing: 0.3 }}>
+              {profile?.isCheckedIn && profile?.lastEntryTime
+                ? (() => {
+                    let dateObj;
+                    if (typeof profile.lastEntryTime?.toDate === 'function') {
+                      dateObj = profile.lastEntryTime.toDate();
+                    } else {
+                      dateObj = new Date(profile.lastEntryTime);
+                    }
+                    return dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                  })()
+                : '-'}
+            </Text>
           </View>
         </View>
       </Animated.View>

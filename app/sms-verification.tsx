@@ -81,14 +81,14 @@ export default function SMSVerification() {
   React.useEffect(() => {
     if (pendingCheck && user) {
       (async () => {
-        const phone10 = phoneNumber.replace(/[^0-9]/g, '').slice(-10);
+        const cleanedPhone = phoneNumber.replace(/\s/g, ''); // keep '+' and digits
         const userData = await getUserData();
         setShowLoading(false);
         setPendingCheck(false);
         if (userData) {
           router.replace('/');
         } else {
-          router.replace({ pathname: '/signup', params: { phone: phone10 } } as any);
+          router.replace({ pathname: '/signup', params: { phone: cleanedPhone } } as any);
         }
       })();
     }
@@ -134,8 +134,8 @@ export default function SMSVerification() {
                 >
                   <Text style={styles.codeText}>{code[i] || ''}</Text>
                 </View>
-              ))}
-            </View>
+            ))}
+          </View>
             <TextInput
               ref={inputRef}
               value={code}
