@@ -1,4 +1,5 @@
 // Import the functions you need from the SDKs you need
+import 'dotenv/config';
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -6,13 +7,13 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBppdGm92dIijZi8V-LUZlnHphR6N6_78E",
-  authDomain: "simpleapp-5c1c6.firebaseapp.com",
-  projectId: "simpleapp-5c1c6",
-  storageBucket: "simpleapp-5c1c6.firebasestorage.app",
-  messagingSenderId: "640646199364",
-  appId: "1:640646199364:web:ecaf77c3a4a88e08fca411",
-  measurementId: "G-883DCFY09G"
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
