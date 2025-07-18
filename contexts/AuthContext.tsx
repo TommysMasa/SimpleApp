@@ -1,15 +1,15 @@
 import {
-  ConfirmationResult,
-  RecaptchaVerifier,
-  User,
-  onAuthStateChanged,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signInWithPhoneNumber,
-  signOut,
-  updateProfile
+    ConfirmationResult,
+    RecaptchaVerifier,
+    User,
+    onAuthStateChanged,
+    sendPasswordResetEmail,
+    signInWithEmailAndPassword,
+    signInWithPhoneNumber,
+    signOut,
+    updateProfile
 } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, limit, query, updateDoc, where } from 'firebase/firestore';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../firebaseConfig';
 
@@ -31,6 +31,7 @@ interface UserData {
   email: string;
   phone: string;
   membershipId: string;
+  uid: string; // Firebase Authのuid
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
@@ -67,53 +68,21 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userDocId, setUserDocId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       console.log('🔄 Auth state changed:', user ? `User: ${user.uid}` : 'No user');
       setUser(user);
       setLoading(false);
+      // ユーザーがログアウトした場合、ドキュメントIDもクリア
+      if (!user) {
+        setUserDocId(null);
+      }
     });
 
     return unsubscribe;
   }, []);
-
-  // membershipIDの重複チェック関数
-  const checkMembershipIdExists = async (membershipId: string): Promise<boolean> => {
-    try {
-      const q = query(collection(db, 'users'), where('membershipId', '==', membershipId));
-      const querySnapshot = await getDocs(q);
-      return !querySnapshot.empty;
-    } catch (error) {
-      console.error('❌ membershipID重複チェックエラー:', error);
-      return false; // エラーの場合は重複なしとして処理を続行
-    }
-  };
-
-  // ユニークなmembershipIDを生成する関数
-  const generateUniqueMembershipId = async (): Promise<string> => {
-    let attempts = 0;
-    const maxAttempts = 10; // 最大試行回数を増やす
-    
-    while (attempts < maxAttempts) {
-      // シンプルにランダムな10桁の数字を生成
-      const randomNumber = Math.floor(Math.random() * 10000000000).toString().padStart(10, '0');
-      const membershipId = randomNumber;
-      
-      // 重複チェック
-      const exists = await checkMembershipIdExists(membershipId);
-      if (!exists) {
-        console.log('✅ ユニークなmembershipID生成成功:', membershipId);
-        return membershipId;
-      }
-      
-      attempts++;
-      console.log(`⚠️ membershipID重複検出 (試行 ${attempts}/${maxAttempts}):`, membershipId);
-    }
-    
-    // 最大試行回数に達した場合、フォールバック
-    throw new Error('ユニークなmembershipIDの生成に失敗しました');
-  };
 
   const sendPhoneVerification = async (phoneNumber: string): Promise<ConfirmationResult> => {
     try {
@@ -153,9 +122,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await updateProfile(currentUser, { displayName });
       console.log('✅ Phone auth user profile updated');
 
-      // 完全にユニークなmembershipID生成（重複チェック付き）
-      const membershipId = await generateUniqueMembershipId();
-
       // Firestoreに保存するデータを準備
       const firestoreData = {
         firstName,
@@ -167,13 +133,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         phone: cleanedPhone, // 国番号込みで保存
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        membershipId,
+        uid: currentUser.uid, // Firebase Authのuid
         isActive: true,
       };
 
-      // Create user document in Firestore with all user data
-      await setDoc(doc(db, 'users', currentUser.uid), firestoreData);
-      console.log('✅ Firestore ユーザードキュメント作成成功');
+      // Firestoreが自動生成するドキュメントIDをmembershipIdとして使用
+      const docRef = await addDoc(collection(db, 'users'), firestoreData);
+      const membershipId = docRef.id;
+      
+      // membershipIdをドキュメントに追加
+      await updateDoc(docRef, { membershipId });
+      
+      // ドキュメントIDを保存
+      setUserDocId(membershipId);
+      
+      console.log('✅ Firestore ユーザードキュメント作成成功 (membershipId:', membershipId, ')');
 
     } catch (error) {
       console.error('❌ サインアップエラー詳細:', error);
@@ -217,29 +191,128 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       console.log('🔄 ユーザーデータ取得開始:', user.uid);
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      console.log('📋 保存されたドキュメントID:', userDocId);
       
-      if (userDoc.exists()) {
-        const data = userDoc.data() as UserData;
-        console.log('✅ ユーザーデータ取得成功:', data);
-        return data;
-      } else {
-        console.log('⚠️ ユーザードキュメントが見つかりません');
-        return null;
+      // 保存されたドキュメントIDがある場合は直接使用
+      if (userDocId) {
+        try {
+          console.log('🔍 保存されたドキュメントIDでアクセス試行:', userDocId);
+          const userDoc = await getDoc(doc(db, 'users', userDocId));
+          if (userDoc.exists()) {
+            const data = userDoc.data() as UserData;
+            console.log('✅ 保存されたドキュメントIDからユーザーデータ取得成功:', data);
+            return data;
+          } else {
+            console.log('⚠️ 保存されたドキュメントIDのドキュメントが存在しません');
+          }
+        } catch (error) {
+          console.log('⚠️ 保存されたドキュメントIDでの取得に失敗:', error);
+        }
       }
+      
+      // ドキュメントIDが見つからない場合、uidでクエリを実行
+      console.log('🔍 uidでクエリ実行試行:', user.uid);
+      try {
+        const uidQuery = query(
+          collection(db, 'users'), 
+          where('uid', '==', user.uid),
+          limit(1)  // 明示的にlimitを設定
+        );
+        const uidQuerySnapshot = await getDocs(uidQuery);
+        
+        if (uidQuerySnapshot.empty) {
+          console.log('⚠️ uidでドキュメントが見つかりません - 新規ユーザーの可能性');
+          return null;
+        }
+        
+        // ドキュメントを取得
+        const userDoc = uidQuerySnapshot.docs[0];
+        const data = userDoc.data() as UserData;
+        
+        // ドキュメントIDを保存
+        setUserDocId(userDoc.id);
+        
+        console.log('✅ クエリからユーザーデータ取得成功:', data);
+        return data;
+      } catch (queryError: any) {
+        if (queryError.code === 'permission-denied') {
+          console.log('⚠️ 権限エラー - 新規ユーザーの可能性');
+          return null;
+        }
+        throw queryError;
+      }
+      
     } catch (error) {
       console.error('❌ ユーザーデータ取得エラー:', error);
+      console.error('❌ エラー詳細:', {
+        user: user?.uid,
+        userDocId,
+        errorCode: (error as any)?.code,
+        errorMessage: (error as any)?.message
+      });
       throw error;
+    }
+  };
+
+  // ユーザーがログインした時にドキュメントIDを取得する関数
+  const fetchUserDocId = async (uid: string) => {
+    try {
+      console.log('🔍 ユーザーログイン時のドキュメントID取得開始:', uid);
+      const uidQuery = query(
+        collection(db, 'users'), 
+        where('uid', '==', uid),
+        limit(1)  // 明示的にlimitを設定
+      );
+      const uidQuerySnapshot = await getDocs(uidQuery);
+      
+      if (!uidQuerySnapshot.empty) {
+        const docId = uidQuerySnapshot.docs[0].id;
+        setUserDocId(docId);
+        console.log('✅ ドキュメントID取得成功:', docId);
+        return docId;
+      } else {
+        console.log('⚠️ ユーザーのドキュメントが見つかりません - 新規ユーザーの可能性');
+        return null;
+      }
+    } catch (error: any) {
+      if (error.code === 'permission-denied') {
+        console.log('⚠️ 権限エラー - 新規ユーザーの可能性');
+        return null;
+      }
+      console.error('❌ ドキュメントID取得エラー:', error);
+      return null;
     }
   };
 
   const updateUserData = async (updates: Partial<UserData>) => {
     if (!user) throw new Error('No user logged in');
-    const userRef = doc(db, 'users', user.uid);
-    await setDoc(userRef, {
+    
+    let docId = userDocId;
+    
+    // 保存されたドキュメントIDがない場合、uidでクエリを実行
+    if (!docId) {
+      const uidQuery = query(
+        collection(db, 'users'), 
+        where('uid', '==', user.uid),
+        limit(1)  // 明示的にlimitを設定
+      );
+      const uidQuerySnapshot = await getDocs(uidQuery);
+      
+      if (uidQuerySnapshot.empty) {
+        throw new Error('User document not found');
+      }
+      
+      docId = uidQuerySnapshot.docs[0].id;
+      setUserDocId(docId);
+    }
+    
+    // ドキュメントを更新
+    const userRef = doc(db, 'users', docId);
+    await updateDoc(userRef, {
       ...updates,
       updatedAt: new Date().toISOString(),
-    }, { merge: true });
+    });
+    
     if (updates.firstName || updates.lastName) {
       const displayName = `${updates.firstName || ''} ${updates.lastName || ''}`.trim();
       if (displayName) {
