@@ -34,7 +34,6 @@ const COLORS = {
 interface UserData {
   firstName: string;
   lastName: string;
-  displayName: string;
   dateOfBirth: string;
   gender: string;
   email: string;
@@ -173,7 +172,7 @@ export default function Barcode() {
             <Ionicons name="person" size={24} color={COLORS.primary} />
           </View>
           <Text style={styles.welcomeText}>
-            {userData.displayName}'s
+            {`${userData.firstName} ${userData.lastName}`.trim()}'s
           </Text>
           <Text style={styles.membershipText}>
             Membership Card

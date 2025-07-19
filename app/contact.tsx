@@ -17,7 +17,7 @@ export default function ContactScreen() {
     const fetchUser = async () => {
       const data = await getUserData();
       if (data) {
-        setName(data.displayName || '');
+        setName(`${data.firstName} ${data.lastName}`.trim());
         setUserId(data.membershipId || '');
       }
     };

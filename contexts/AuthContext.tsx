@@ -25,7 +25,6 @@ interface UserRegistrationData {
 interface UserData {
   firstName: string;
   lastName: string;
-  displayName: string;
   dateOfBirth: string;
   gender: string;
   email: string;
@@ -126,7 +125,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const firestoreData = {
         firstName,
         lastName,
-        displayName,
         dateOfBirth,
         gender,
         email,

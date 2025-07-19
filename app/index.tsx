@@ -2,18 +2,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Dimensions,
-  Easing,
-  Platform,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Dimensions,
+    Easing,
+    Platform,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -207,7 +207,7 @@ export default function Index() {
               Welcome back,
             </Text>
             <Text style={styles.userName}>
-              {user?.displayName || user?.email || 'User'}
+              {profile ? `${profile.firstName} ${profile.lastName}`.trim() : user?.email || 'User'}
             </Text>
           </View>
         </View>
