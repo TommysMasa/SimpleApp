@@ -40,7 +40,6 @@ interface UserData {
   membershipId: string;
   createdAt: string;
   updatedAt: string;
-  isActive: boolean;
   isCheckedIn?: boolean;
   lastEntryTime?: any;
 }
