@@ -1,6 +1,6 @@
-# Welcome to your Expo app 👋
+# Manga Lounge App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native app built with Expo and Firebase for manga lounge membership management.
 
 ## Get started
 
@@ -10,41 +10,66 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Set up environment variables
+
+   Create a `.env` file with your Firebase configuration:
+   ```bash
+   EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key_here
+   EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+   EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
+   EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+   EAS_PROJECT_ID=your_eas_project_id
+   ```
+
+3. Start the app
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## Build Configuration
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Development
+- Network inspector enabled for debugging
+- Development client enabled
+- Internal distribution
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Production
+- Network inspector disabled for security
+- No development client
+- App Store distribution
 
-## Get a fresh project
-
-When you're ready, run:
-
+### Build Commands
 ```bash
-npm run reset-project
+# Development build
+eas build --profile development --platform ios
+
+# Production build
+eas build --profile production --platform ios
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Security
+
+- Firebase configuration uses public environment variables (safe for client-side)
+- Security is enforced through Firestore Security Rules
+- Network inspector is disabled in production builds
+- Debug logs are removed from production code
+- **Never commit your actual Firebase keys to version control**
+
+## Features
+
+- Phone number authentication
+- Membership management
+- QR code generation
+- Real-time status updates
+- Contact form
+- Profile management
 
 ## Learn more
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [Expo documentation](https://docs.expo.dev/)
+- [Firebase documentation](https://firebase.google.com/docs)
+- [React Native documentation](https://reactnative.dev/)

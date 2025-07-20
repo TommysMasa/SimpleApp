@@ -1,0 +1,65 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isStaff() {
+      return isSignedIn() && request.auth.token.isStaff == true;
+    }
+
+    /* -------------------- users collection -------------------- */
+    match /users/{documentId} {
+
+      // READ: スタッフは全件、一般ユーザーは自分のドキュメントのみ取得可
+      allow get: if isStaff() || (isSignedIn() && documentId == request.auth.uid);
+
+      // LIST: スタッフは全件、一般ユーザーはmembershipId検索のみ許可
+      allow list: if isStaff() || (
+        isSignedIn() && 
+        request.query.limit <= 1 && 
+        request.query.filters[0].fieldPath == "membershipId"
+      );
+
+      // CREATE: スタッフまたは、認証済みユーザーが自分のドキュメントを作成する場合
+      allow create: if isStaff() || (isSignedIn() && documentId == request.auth.uid);
+
+      // UPDATE: スタッフまたは、認証済みユーザーが自分のドキュメントを更新する場合
+      allow update: if isStaff() || (isSignedIn() && documentId == request.auth.uid);
+
+      // DELETE: スタッフのみ削除可
+      allow delete: if isStaff();
+    }
+
+    /* -------------------- records collection -------------------- */
+    match /records/{recordId} {
+      
+      // READ: スタッフは全件、一般ユーザーは自分の記録のみ取得可
+      allow get: if isStaff() || (
+        isSignedIn() && 
+        resource.data.membershipId == request.auth.uid
+      );
+
+      // LIST: スタッフのみ一覧取得可
+      allow list: if isStaff();
+
+      // CREATE: スタッフのみ作成可
+      allow create: if isStaff();
+
+      // UPDATE: スタッフのみ更新可
+      allow update: if isStaff();
+
+      // DELETE: スタッフのみ削除可
+      allow delete: if isStaff();
+    }
+
+    /* -------------------- fallback -------------------- */
+    // それ以外のコレクションはデフォルト拒否
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

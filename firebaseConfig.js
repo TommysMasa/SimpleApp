@@ -5,6 +5,9 @@ import { getFirestore } from "firebase/firestore";
 // Note: Analytics is not always supported in Expo environments
 
 // Your web app's Firebase configuration
+// SECURITY NOTE: These configuration values are safe to expose to the client
+// as they are meant to be public. The actual security is enforced by
+// Firestore Security Rules and Firebase Authentication.
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,

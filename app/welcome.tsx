@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import {
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function Welcome() {
@@ -37,7 +37,7 @@ export default function Welcome() {
           <Ionicons name="information-circle" size={20} color="#5A8A7A" style={{ marginRight: 8 }} />
           <Text style={styles.ageRestrictionText}>
             Children under 13 may enter only with an adult parent or guardian.
-          </Text>
+        </Text>
         </View>
 
         {/* Change Phone Number link */}
