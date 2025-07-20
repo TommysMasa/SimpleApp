@@ -89,7 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
       return confirmationResult;
     } catch (error: any) {
-      console.error('Phone verification error:', error);
+      // エラーログを削除（セキュリティ上の理由）
       throw error;
     }
   };
@@ -115,7 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       await setDoc(doc(db, 'users', currentUser.uid), userDoc);
     } catch (error) {
-      console.error('Signup error:', error);
+      // エラーログを削除（セキュリティ上の理由）
       throw error;
     }
   };
@@ -132,7 +132,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await auth.signOut();
     } catch (error) {
-      console.error('Signout error:', error);
+      // エラーログを削除（セキュリティ上の理由）
       throw error;
     }
   };
@@ -160,7 +160,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return null;
       }
     } catch (error) {
-      console.error('Get user data error:', error);
+      // エラーログを削除（セキュリティ上の理由）
       return null;
     }
   };
