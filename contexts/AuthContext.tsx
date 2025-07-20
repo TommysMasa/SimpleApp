@@ -181,13 +181,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         console.log('🔍 uidでドキュメントアクセス試行:', user.uid);
         const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data() as UserData;
+      if (userDoc.exists()) {
+        const data = userDoc.data() as UserData;
           console.log('✅ uidからユーザーデータ取得成功:', data);
-          return data;
-        } else {
+        return data;
+      } else {
           console.log('⚠️ uidのドキュメントが存在しません - 新規ユーザーの可能性');
-          return null;
+        return null;
         }
       } catch (error) {
         console.log('⚠️ uidでの取得に失敗:', error);

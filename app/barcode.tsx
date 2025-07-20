@@ -157,9 +157,9 @@ export default function Barcode() {
             </View>
           </TouchableOpacity>
           <View style={styles.headerTop}>
-            <View style={styles.headerCenter}>
-              <Text style={styles.title}>Manga Lounge</Text>
-              <Text style={styles.subtitle}>Membership Card</Text>
+          <View style={styles.headerCenter}>
+            <Text style={styles.title}>Manga Lounge</Text>
+            <Text style={styles.subtitle}>Membership Card</Text>
             </View>
           </View>
           <View style={styles.headerSpacer} />

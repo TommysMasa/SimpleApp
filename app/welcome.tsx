@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import {
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 export default function Welcome() {
@@ -32,14 +32,14 @@ export default function Welcome() {
           <Ionicons name="call" size={22} color="#fff" style={{ marginRight: 10 }} />
           <Text style={styles.phoneButtonText}>Continue with phone</Text>
         </TouchableOpacity>
-        {/* Privacy note */}
-        <Text style={styles.privacyNote}>
-          We'll never share anything without your permission
-        </Text>
-        {/* Terms and Privacy */}
-        <Text style={styles.termsText}>
-          By signing up, you agree to our <Text style={styles.link}>Terms and Conditions</Text>. Learn how we use your data in our <Text style={styles.link}>Privacy Policy</Text>
-        </Text>
+        {/* Age restriction note */}
+        <View style={styles.ageRestrictionContainer}>
+          <Ionicons name="information-circle" size={20} color="#5A8A7A" style={{ marginRight: 8 }} />
+          <Text style={styles.ageRestrictionText}>
+            Children under 13 may enter only with an adult parent or guardian.
+          </Text>
+        </View>
+
         {/* Change Phone Number link */}
         <Text style={[styles.termsText, { marginBottom: 32 }]}> 
           <Text style={styles.link} onPress={() => router.push('./change-phone-request')}>Change Phone Number</Text>
@@ -110,6 +110,25 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 16,
     fontWeight: '500',
+  },
+  ageRestrictionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F8F4',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+    marginTop: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#5A8A7A',
+  },
+  ageRestrictionText: {
+    color: '#2D1B14',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+    flex: 1,
   },
   termsText: {
     color: '#222', // black

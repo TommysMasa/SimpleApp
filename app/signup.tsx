@@ -2,26 +2,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Dimensions,
-  Easing,
-  findNodeHandle,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView as RNScrollView,
-  TextInput as RNTextInput,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  UIManager,
-  View
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Dimensions,
+    Easing,
+    findNodeHandle,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView as RNScrollView,
+    TextInput as RNTextInput,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    UIManager,
+    View
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -148,6 +148,26 @@ export default function SignUp() {
     return '';
   };
 
+  const validateAge = (year: string, month: string, day: string) => {
+    const birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const today = new Date();
+    
+    // 日付の差分を直接計算
+    const daysDiff = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 3600 * 24));
+    const yearsDiff = daysDiff / 365.25;
+    const age = Math.floor(yearsDiff);
+    
+    console.log('Age validation:', {
+      birthDate: birthDate.toISOString(),
+      today: today.toISOString(),
+      daysDiff,
+      yearsDiff,
+      calculatedAge: age
+    });
+    
+    return age;
+  };
+
   const handleSignUp = async () => {
     const userData = {
       phone,
@@ -160,6 +180,13 @@ export default function SignUp() {
     
     if (!phone || !firstName || !lastName || !email || !birthYear || !birthMonth || !birthDay || !gender) {
       showAlert('Error', 'All fields are required');
+      return;
+    }
+
+    // 13歳未満チェック
+    const age = validateAge(birthYear, birthMonth, birthDay);
+    if (age < 13) {
+      showAlert('Age Restriction', 'You must be at least 13 years old to use this app');
       return;
     }
 
