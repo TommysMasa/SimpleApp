@@ -17,16 +17,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-// Initialize Firebase Authentication and get a reference to the service
-export const auth = getAuth(app);
-
-// Initialize Cloud Firestore with long-polling (bypass WebChannel issues)
-export const db = getFirestore(app);
-
-// Firebase接続テスト
-console.log('🔄 Firebase初期化完了');
-console.log('📱 Firebase Auth Domain:', firebaseConfig.authDomain);
-console.log('🗄️ Firebase Project ID:', firebaseConfig.projectId);
-
-export default app;
+export { app, auth, db };

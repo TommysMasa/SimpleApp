@@ -5,10 +5,9 @@ import {
     onAuthStateChanged,
     sendPasswordResetEmail,
     signInWithEmailAndPassword,
-    signInWithPhoneNumber,
-    signOut
+    signInWithPhoneNumber
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../firebaseConfig';
 
@@ -67,13 +66,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log('🔄 Auth state changed:', user ? `User: ${user.uid}` : 'No user');
       setUser(user);
       setLoading(false);
-
     });
 
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
   const sendPhoneVerification = async (phoneNumber: string): Promise<ConfirmationResult> => {
@@ -97,45 +94,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signUp = async (userData: UserRegistrationData) => {
+  const signUp = async (userData: any) => {
     try {
-      const { firstName, lastName, dateOfBirth, gender, email, phone } = userData;
-      // phone は国番号込みの形式 (+81.. など) でそのまま保存する
-      const cleanedPhone = phone.replace(/\s/g, '');
-
-      console.log('🔄 サインアップ開始:', { email, firstName, lastName, dateOfBirth, gender });
-
       const currentUser = auth.currentUser;
-      if (!currentUser || !currentUser.phoneNumber) {
-        throw new Error('Phone-based user not authenticated');
+      if (!currentUser) {
+        throw new Error('No authenticated user');
       }
-      console.log('✅ Phone auth user authenticated');
 
-      // Firestoreに保存するデータを準備
-      const firestoreData = {
-        firstName,
-        lastName,
-        dateOfBirth,
-        gender,
-        email,
-        phone: cleanedPhone, // 国番号込みで保存
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+      const userDoc = {
+        membershipId: currentUser.uid,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        dateOfBirth: userData.dateOfBirth,
+        gender: userData.gender,
+        phone: userData.phone,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
 
-      // uidをドキュメントIDとして使用
-      const docRef = doc(db, 'users', currentUser.uid);
-      await setDoc(docRef, firestoreData);
-      
-      // membershipIdをドキュメントに追加（uidと同じ値）
-      await updateDoc(docRef, { membershipId: currentUser.uid });
-      
-
-      
-      console.log('✅ Firestore ユーザードキュメント作成成功 (membershipId:', currentUser.uid, ')');
-
+      await setDoc(doc(db, 'users', currentUser.uid), userDoc);
     } catch (error) {
-      console.error('❌ サインアップエラー詳細:', error);
+      console.error('Signup error:', error);
       throw error;
     }
   };
@@ -150,12 +130,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      console.log('🔄 ログアウト処理開始');
-      await signOut(auth);
-      console.log('✅ Firebase signOut 完了');
-      // onAuthStateChangedが自動的にuserをnullに設定する
+      await auth.signOut();
     } catch (error) {
-      console.error('❌ ログアウトエラー:', error);
+      console.error('Signout error:', error);
       throw error;
     }
   };
@@ -169,39 +146,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const getUserData = async (): Promise<UserData | null> => {
+    if (!user) {
+      return null;
+    }
+
     try {
-      if (!user) {
-        console.log('ℹ️ ユーザーがログインしていません');
-        return null;
-      }
-      
-      console.log('🔄 ユーザーデータ取得開始:', user.uid);
-      
-      // uidをドキュメントIDとして直接アクセス
-      try {
-        console.log('🔍 uidでドキュメントアクセス試行:', user.uid);
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data() as UserData;
-          console.log('✅ uidからユーザーデータ取得成功:', data);
-        return data;
+      const docRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        return docSnap.data() as UserData;
       } else {
-          console.log('⚠️ uidのドキュメントが存在しません - 新規ユーザーの可能性');
         return null;
-        }
-      } catch (error) {
-        console.log('⚠️ uidでの取得に失敗:', error);
-        throw error;
       }
-      
     } catch (error) {
-      console.error('❌ ユーザーデータ取得エラー:', error);
-      console.error('❌ エラー詳細:', {
-        user: user?.uid,
-        errorCode: (error as any)?.code,
-        errorMessage: (error as any)?.message
-      });
-      throw error;
+      console.error('Get user data error:', error);
+      return null;
     }
   };
 

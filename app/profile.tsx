@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -18,13 +18,12 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [dateError, setDateError] = useState('');
+  const [emailError, setEmailError] = useState('');
 
-  useEffect(() => {
-    console.log('🏠 Profile screen loaded');
+    useEffect(() => {
     (async () => {
       const data = await getUserData();
       if (data) {
-        console.log('📊 User data loaded:', data);
         setUserData(data);
         setFirstName(data.firstName || '');
         setLastName(data.lastName || '');
@@ -37,8 +36,6 @@ export default function ProfileScreen() {
   }, [getUserData]);
 
   const validateDateOfBirth = (dateString: string) => {
-    console.log('🔍 validateDateOfBirth called with:', dateString);
-    
     if (!dateString) {
       setDateError('');
       return true;
@@ -57,7 +54,24 @@ export default function ProfileScreen() {
     const day = parseInt(match[2]);
     const year = parseInt(match[3]);
 
-    console.log('Parsed date:', { month, day, year });
+    // 月の範囲チェック
+    if (month < 1 || month > 12) {
+      setDateError('Please enter a valid month (1-12)');
+      return false;
+    }
+
+    // 年の範囲チェック
+    if (year < 1900 || year > new Date().getFullYear()) {
+      setDateError('Please enter a valid year');
+      return false;
+    }
+
+    // 日の範囲チェック（月に応じて）
+    const daysInMonth = new Date(year, month, 0).getDate();
+    if (day < 1 || day > daysInMonth) {
+      setDateError(`Please enter a valid day (1-${daysInMonth} for ${month}/${year})`);
+      return false;
+    }
 
     // 日付の妥当性チェック
     const date = new Date(year, month - 1, day);
@@ -72,28 +86,17 @@ export default function ProfileScreen() {
       return false;
     }
 
-    // 13歳未満チェック - より正確な計算方法
+    // 13歳未満チェック
     const today = new Date();
     const birthDate = new Date(year, month - 1, day);
     
     // 日付の差分を直接計算
     const daysDiff = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 3600 * 24));
     const yearsDiff = daysDiff / 365.25;
-    
-    console.log('Age calculation:', {
-      today: today.toISOString(),
-      birthDate: birthDate.toISOString(),
-      daysDiff,
-      yearsDiff,
-      calculatedAge: Math.floor(yearsDiff)
-    });
-    
     const age = Math.floor(yearsDiff);
     
-    console.log('Final calculated age:', age);
-    
     if (age < 13) {
-      setDateError(`You must be at least 13 years old to use this app (calculated age: ${age})`);
+      setDateError('You must be at least 13 years old to use this app');
       return false;
     }
 
@@ -101,13 +104,53 @@ export default function ProfileScreen() {
     return true;
   };
 
-  const handleDateInputChange = (text: string) => {
-    console.log('🚨 handleDateInputChange called with:', text);
-    console.log('🚨 Function is being executed!');
+  const validateEmail = (emailString: string) => {
+    if (!emailString) {
+      setEmailError('');
+      return true;
+    }
+
+    // 基本的なEmail形式チェック
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailString)) {
+      setEmailError('Please enter a valid email address');
+      return false;
+    }
+
+    // より詳細なEmail形式チェック
+    const [localPart, domain] = emailString.split('@');
     
+    // ローカル部分のチェック
+    if (localPart.length === 0 || localPart.length > 64) {
+      setEmailError('Email local part is invalid');
+      return false;
+    }
+
+    // ドメイン部分のチェック
+    if (domain.length === 0 || domain.length > 253) {
+      setEmailError('Email domain is invalid');
+      return false;
+    }
+
+    // ドメインにドットが含まれているかチェック
+    if (!domain.includes('.')) {
+      setEmailError('Email domain must contain a dot');
+      return false;
+    }
+
+    // ドメインの最後がドットで終わっていないかチェック
+    if (domain.endsWith('.')) {
+      setEmailError('Email domain cannot end with a dot');
+      return false;
+    }
+
+    setEmailError('');
+    return true;
+  };
+
+  const handleDateInputChange = (text: string) => {
     // 数字のみを抽出
     const numbers = text.replace(/\D/g, '');
-    console.log('🔢 Extracted numbers:', numbers, 'length:', numbers.length);
     
     // フォーマットを適用 (MM/DD/YYYY)
     let formatted = '';
@@ -115,16 +158,19 @@ export default function ProfileScreen() {
     if (numbers.length >= 3) formatted += '/' + numbers.slice(2, 4);
     if (numbers.length >= 5) formatted += '/' + numbers.slice(4, 8);
     
-    console.log('📅 Formatted date:', formatted);
     setDateOfBirth(formatted);
     
     // 8桁の数字が入力されたらバリデーション実行
     if (numbers.length === 8) {
-      console.log('✅ 8 digits reached, calling validateDateOfBirth');
       validateDateOfBirth(formatted);
     } else {
       setDateError('');
     }
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    validateEmail(text);
   };
 
   const handleSave = async () => {
@@ -138,9 +184,8 @@ export default function ProfileScreen() {
       return;
     }
     
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address.');
+    // Emailのバリデーション
+    if (!validateEmail(email)) {
       return;
     }
     setSaving(true);
@@ -164,77 +209,88 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <TouchableOpacity
-        style={[styles.backButton, { top: insets.top + 8 }]}
-        onPress={() => router.back()}
-        accessibilityLabel="Back"
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <View style={styles.backButtonCircle}>
-          <Ionicons name="arrow-back" size={24} color="#222" />
-        </View>
-      </TouchableOpacity>
-      <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Profile</Text>
-        <Text style={styles.label}>First Name</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="First Name"
-          value={firstName}
-          onChangeText={setFirstName}
-        />
-        <Text style={styles.label}>Last Name</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Last Name"
-          value={lastName}
-          onChangeText={setLastName}
-        />
-        <Text style={styles.label}>Date of Birth</Text>
-        <TextInput
-          style={[styles.input, dateError ? styles.inputError : null]}
-          placeholder="Date of Birth (MM/DD/YYYY)"
-          value={dateOfBirth}
-          onChangeText={handleDateInputChange}
-          keyboardType="numeric"
-          maxLength={10}
-        />
-        {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
-        <Text style={styles.label}>Gender</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Gender"
-          value={gender}
-          onChangeText={setGender}
-        />
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-        />
-        <Text style={styles.label}>Phone Number</Text>
-        <TextInput
-          style={[styles.input, styles.disabledInput]}
-          placeholder="Phone Number"
-          value={phone}
-          editable={false}
-          selectTextOnFocus={false}
-          placeholderTextColor="#9CA3AF"
-        />
-        <TouchableOpacity style={[styles.button, saving && styles.buttonDisabled]} onPress={handleSave} disabled={saving}>
-          {saving ? (
-            <Ionicons name="checkmark-done" size={20} color="#fff" style={{ marginRight: 8 }} />
-          ) : (
-            <Ionicons name="save-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-          )}
-          <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save'}</Text>
+        <TouchableOpacity
+          style={[styles.backButton, { top: insets.top + 8 }]}
+          onPress={() => router.back()}
+          accessibilityLabel="Back"
+        >
+          <View style={styles.backButtonCircle}>
+            <Ionicons name="arrow-back" size={24} color="#222" />
+          </View>
         </TouchableOpacity>
-        {saved && <Text style={styles.success}>Profile saved!</Text>}
-      </ScrollView>
+        <ScrollView 
+          contentContainerStyle={styles.inner} 
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.label}>First Name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="First Name"
+            value={firstName}
+            onChangeText={setFirstName}
+          />
+          <Text style={styles.label}>Last Name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Last Name"
+            value={lastName}
+            onChangeText={setLastName}
+          />
+          <Text style={styles.label}>Date of Birth</Text>
+          <TextInput
+            style={[styles.input, dateError ? styles.inputError : null]}
+            placeholder="Date of Birth (MM/DD/YYYY)"
+            value={dateOfBirth}
+            onChangeText={handleDateInputChange}
+            keyboardType="numeric"
+            maxLength={10}
+          />
+          {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
+          <Text style={styles.label}>Gender</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Gender"
+            value={gender}
+            onChangeText={setGender}
+          />
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={[styles.input, emailError ? styles.inputError : null]}
+            placeholder="Email"
+            value={email}
+            onChangeText={handleEmailChange}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+          />
+          {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+          <Text style={styles.label}>Phone Number</Text>
+          <TextInput
+            style={[styles.input, styles.disabledInput]}
+            placeholder="Phone Number"
+            value={phone}
+            editable={false}
+            selectTextOnFocus={false}
+            placeholderTextColor="#9CA3AF"
+          />
+          <TouchableOpacity style={[styles.button, saving && styles.buttonDisabled]} onPress={handleSave} disabled={saving}>
+            {saving ? (
+              <Ionicons name="checkmark-done" size={20} color="#fff" style={{ marginRight: 8 }} />
+            ) : (
+              <Ionicons name="save-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+            )}
+            <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save'}</Text>
+          </TouchableOpacity>
+          {saved && <Text style={styles.success}>Profile saved!</Text>}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

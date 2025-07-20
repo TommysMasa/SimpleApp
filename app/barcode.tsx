@@ -201,11 +201,6 @@ export default function Barcode() {
         {/* Membership Details */}
         <View style={styles.detailsContainer}>
           <View style={styles.detailItem}>
-            <Ionicons name="card-outline" size={18} color={COLORS.textSecondary} />
-            <Text style={styles.detailLabel}>ID:</Text>
-            <Text style={styles.detailValue}>{userData.membershipId}</Text>
-          </View>
-          <View style={styles.detailItem}>
             <Ionicons name={userData.isCheckedIn ? 'walk' : 'walk-outline'} size={18} color={userData.isCheckedIn ? COLORS.success : COLORS.textSecondary} />
             <Text style={styles.detailLabel}>Status:</Text>
             <Text style={[styles.detailValue, { color: userData.isCheckedIn ? COLORS.success : COLORS.textSecondary }]}> {userData.isCheckedIn ? 'Checked In' : 'Checked Out'} </Text>

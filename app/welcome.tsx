@@ -103,14 +103,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.4,
   },
-  privacyNote: {
-    color: '#222', // black
-    fontSize: 15,
-    textAlign: 'center',
-    marginBottom: 16,
-    marginTop: 16,
-    fontWeight: '500',
-  },
+
   ageRestrictionContainer: {
     flexDirection: 'row',
     alignItems: 'center',

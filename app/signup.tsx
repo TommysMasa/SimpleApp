@@ -58,19 +58,15 @@ export default function SignUp() {
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
-  const [checkingProfile, setCheckingProfile] = useState(true);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(30));
 
-  const { user, signUp, getUserData } = useAuth();
+  const { signUp } = useAuth();
 
   const genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
-  
-  // Year options (1900 to current year)
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: currentYear - 1900 + 1 }, (_, i) => (currentYear - i).toString());
   
-  // Month options
   const monthOptions = [
     { value: '01', label: 'January' },
     { value: '02', label: 'February' },
@@ -86,11 +82,9 @@ export default function SignUp() {
     { value: '12', label: 'December' },
   ];
   
-  // 日のオプション（選択された年月に応じて動的に生成）
   const getDaysInMonth = (year: string, month: string) => {
     if (!year || !month) return 31;
-    const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
-    return daysInMonth;
+    return new Date(parseInt(year), parseInt(month), 0).getDate();
   };
   
   const dayOptions = Array.from({ length: getDaysInMonth(birthYear, birthMonth) }, (_, i) => 
@@ -107,7 +101,6 @@ export default function SignUp() {
   const emailRef = useRef<RNTextInput>(null);
 
   useEffect(() => {
-    // アニメーション開始
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -124,7 +117,6 @@ export default function SignUp() {
   }, []);
 
   useEffect(() => {
-    // 月が変更されたときに日をリセット
     if (birthYear && birthMonth && birthDay) {
       const maxDays = getDaysInMonth(birthYear, birthMonth);
       if (parseInt(birthDay) > maxDays) {
@@ -148,22 +140,58 @@ export default function SignUp() {
     return '';
   };
 
-  const validateAge = (year: string, month: string, day: string) => {
-    const birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    const today = new Date();
+  const validateEmail = (emailString: string) => {
+    if (!emailString) return false;
     
-    // 日付の差分を直接計算
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailString)) return false;
+    
+    const [localPart, domain] = emailString.split('@');
+    
+    if (localPart.length === 0 || localPart.length > 64) return false;
+    if (domain.length === 0 || domain.length > 253) return false;
+    if (!domain.includes('.')) return false;
+    if (domain.endsWith('.')) return false;
+    
+    return true;
+  };
+
+  const validateAge = (year: string, month: string, day: string) => {
+    const yearNum = parseInt(year);
+    const monthNum = parseInt(month);
+    const dayNum = parseInt(day);
+    
+    if (monthNum < 1 || monthNum > 12) {
+      showAlert('Invalid Date', 'Please enter a valid month (1-12)');
+      return -1;
+    }
+
+    if (yearNum < 1900 || yearNum > new Date().getFullYear()) {
+      showAlert('Invalid Date', 'Please enter a valid year');
+      return -1;
+    }
+
+    const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+    if (dayNum < 1 || dayNum > daysInMonth) {
+      showAlert('Invalid Date', `Please enter a valid day (1-${daysInMonth} for ${monthNum}/${yearNum})`);
+      return -1;
+    }
+
+    const birthDate = new Date(yearNum, monthNum - 1, dayNum);
+    if (birthDate.getFullYear() !== yearNum || birthDate.getMonth() !== monthNum - 1 || birthDate.getDate() !== dayNum) {
+      showAlert('Invalid Date', 'Please enter a valid date');
+      return -1;
+    }
+
+    const today = new Date();
+    if (birthDate > today) {
+      showAlert('Invalid Date', 'Date of birth cannot be in the future');
+      return -1;
+    }
+    
     const daysDiff = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 3600 * 24));
     const yearsDiff = daysDiff / 365.25;
     const age = Math.floor(yearsDiff);
-    
-    console.log('Age validation:', {
-      birthDate: birthDate.toISOString(),
-      today: today.toISOString(),
-      daysDiff,
-      yearsDiff,
-      calculatedAge: age
-    });
     
     return age;
   };
@@ -183,8 +211,13 @@ export default function SignUp() {
       return;
     }
 
-    // 13歳未満チェック
+    if (!validateEmail(email)) {
+      showAlert('Error', 'Please enter a valid email address');
+      return;
+    }
+
     const age = validateAge(birthYear, birthMonth, birthDay);
+    if (age === -1) return;
     if (age < 13) {
       showAlert('Age Restriction', 'You must be at least 13 years old to use this app');
       return;
@@ -200,7 +233,6 @@ export default function SignUp() {
     try {
       await signUp(userData);
       router.replace('/');
-      
     } catch (error) {
       const authError = error as any;
       let errorMessage = 'Account creation failed';
@@ -241,7 +273,6 @@ export default function SignUp() {
     setShowDayPicker(false);
   };
 
-  // スクロールして中央に持ってくる関数（TouchableOpacityにも対応）
   const scrollToInput = (ref: React.RefObject<any>) => {
     if (ref.current && scrollViewRef.current) {
       const inputHandle = findNodeHandle(ref.current);

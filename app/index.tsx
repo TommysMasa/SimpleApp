@@ -62,7 +62,7 @@ export default function Index() {
           } else {
             setProfile(profileData);
             setCheckingProfile(false);
-            // 画面表示アニメーション開始
+            
             Animated.parallel([
               Animated.timing(fadeAnim, {
                 toValue: 1,
@@ -77,7 +77,6 @@ export default function Index() {
               }),
             ]).start();
             
-            // カードのスケールアニメーション
             Animated.stagger(200, [
               Animated.spring(scaleAnim1, {
                 toValue: 1,
