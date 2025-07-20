@@ -94,7 +94,7 @@ export default function Barcode() {
           }, 400);
         }
       } catch (error) {
-        console.error('❌ User data fetch error:', error);
+        // エラーログを削除（セキュリティ上の理由）
       } finally {
         setLoading(false);
       }

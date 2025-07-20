@@ -14,6 +14,7 @@ A React Native app built with Expo and Firebase for manga lounge membership mana
 
    Create a `.env` file with your Firebase configuration:
    ```bash
+   # Firebase Client Configuration (These are safe to expose - they are public by design)
    EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key_here
    EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
    EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
@@ -21,8 +22,12 @@ A React Native app built with Expo and Firebase for manga lounge membership mana
    EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
    EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
    EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+   
+   # EAS Build Configuration
    EAS_PROJECT_ID=your_eas_project_id
    ```
+   
+   **⚠️ Security Note**: The Firebase configuration values above are designed to be public and safe for client-side use. The actual security is enforced by Firestore Security Rules and Firebase Authentication. Never add truly sensitive information (like service account keys, admin SDK keys, or database passwords) to EXPO_PUBLIC_ variables.
 
 3. Start the app
 
@@ -53,11 +58,13 @@ eas build --profile production --platform ios
 
 ## Security
 
-- Firebase configuration uses public environment variables (safe for client-side)
-- Security is enforced through Firestore Security Rules
-- Network inspector is disabled in production builds
-- Debug logs are removed from production code
-- **Never commit your actual Firebase keys to version control**
+- **Firebase Configuration**: Uses public environment variables (safe for client-side exposure)
+- **Data Security**: Enforced through Firestore Security Rules and Firebase Authentication
+- **Network Inspector**: Disabled in production builds for security
+- **Debug Logs**: Removed from production code to prevent information leakage
+- **Environment Variables**: Only use EXPO_PUBLIC_ prefix for values that are safe to expose
+- **Version Control**: Never commit actual Firebase keys or sensitive data to version control
+- **Client-Side Security**: Remember that all EXPO_PUBLIC_ variables are bundled with the app and visible to users
 
 ## Features
 
