@@ -39,7 +39,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>19</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSMinimumSystemVersion</key>
@@ -83,13 +83,5 @@
     <string>Automatic</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
-    <key>LSApplicationQueriesSchemes</key>
-    <array>
-      <string>googlechrome</string>
-      <string>googlechromes</string>
-      <string>googlechrome-x-callback</string>
-      <string>comgooglemaps</string>
-      <string>comgooglemaps-x-callback</string>
-    </array>
   </dict>
 </plist>
