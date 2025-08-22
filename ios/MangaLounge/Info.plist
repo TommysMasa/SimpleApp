@@ -38,8 +38,8 @@
         </array>
       </dict>
     </array>
-    <key>CFBundleVersion</key>
-    <string>19</string>
+    	<key>CFBundleVersion</key>
+	<string>23</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSMinimumSystemVersion</key>

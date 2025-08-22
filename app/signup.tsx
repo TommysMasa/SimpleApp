@@ -10,6 +10,7 @@ import {
     findNodeHandle,
     Keyboard,
     KeyboardAvoidingView,
+    Modal,
     Platform,
     ScrollView as RNScrollView,
     TextInput as RNTextInput,
@@ -20,6 +21,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     UIManager,
     View
 } from 'react-native';
@@ -131,6 +133,20 @@ export default function SignUp() {
     } else {
       Alert.alert(title, message);
     }
+  };
+
+  // Measure and show gender dropdown in a Modal to avoid z-index/ScrollView clipping issues
+  const [genderMenuRect, setGenderMenuRect] = useState<{ x: number; y: number; width: number; height: number }>({ x: 0, y: 0, width: 0, height: 0 });
+  const openGenderMenu = () => {
+    const handle = findNodeHandle(genderRef.current);
+    if (!handle) {
+      setShowGenderPicker(true);
+      return;
+    }
+    UIManager.measureInWindow(handle, (x, y, width, height) => {
+      setGenderMenuRect({ x, y, width, height });
+      setShowGenderPicker(true);
+    });
   };
 
   const formatDateOfBirth = () => {
@@ -293,6 +309,7 @@ export default function SignUp() {
   };
 
   return (
+    <>
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <KeyboardAvoidingView
@@ -328,6 +345,7 @@ export default function SignUp() {
           <ScrollView
             ref={scrollViewRef}
             style={styles.scrollView}
+            contentContainerStyle={styles.scrollViewContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="never"
             keyboardDismissMode="on-drag"
@@ -493,7 +511,7 @@ export default function SignUp() {
                   <TouchableOpacity 
                     ref={genderRef}
                     style={styles.selectInput}
-                    onPress={() => setShowGenderPicker(!showGenderPicker)}
+                    onPress={openGenderMenu}
                   >
                     <Text style={[styles.selectText, !gender && styles.placeholderText]}>
                       {gender || 'Select gender'}
@@ -501,19 +519,7 @@ export default function SignUp() {
                     <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
                   </TouchableOpacity>
                   
-                  {showGenderPicker && (
-                    <View style={styles.dropdown}>
-                      {genderOptions.map((option) => (
-                        <TouchableOpacity
-                          key={option}
-                          style={styles.dropdownItem}
-                          onPress={() => handleGenderSelect(option)}
-                        >
-                          <Text style={styles.dropdownText}>{option}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
+                  {/* Dropdown moved to a Modal to ensure it renders above other content */}
                 </View>
 
                 <View style={styles.inputGroup}>
@@ -574,6 +580,36 @@ export default function SignUp() {
         </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+
+    {/* Gender dropdown modal */}
+    <Modal visible={showGenderPicker} transparent animationType="fade" onRequestClose={() => setShowGenderPicker(false)}>
+      <TouchableWithoutFeedback onPress={() => setShowGenderPicker(false)}>
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.dropdownAbsolute,
+              {
+                top: genderMenuRect.y + genderMenuRect.height + 4,
+                left: genderMenuRect.x,
+                width: Math.max(genderMenuRect.width, 200),
+              },
+            ]}
+          >
+            {genderOptions.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={styles.dropdownItem}
+                onPress={() => handleGenderSelect(option)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.dropdownText}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+    </>
   );
 }
 
@@ -625,6 +661,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollViewContent: {
+    paddingBottom: 40,
+  },
   form: {
     paddingHorizontal: 20,
     paddingBottom: 40,
@@ -640,6 +679,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     gap: 16,
+    position: 'relative',
+    zIndex: 9996,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -658,6 +699,8 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     gap: 6,
+    position: 'relative',
+    zIndex: 9997,
   },
   label: {
     fontSize: 14,
@@ -717,6 +760,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
+    zIndex: 99998,
   },
   selectText: {
     fontSize: 16,
@@ -736,12 +780,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     marginTop: 4,
     maxHeight: 200,
-    zIndex: 1000,
+    zIndex: 99999,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: 20,
   },
   dropdownItem: {
     paddingVertical: 12,
@@ -752,6 +796,25 @@ const styles = StyleSheet.create({
   dropdownText: {
     fontSize: 14,
     color: COLORS.text,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  dropdownAbsolute: {
+    position: 'absolute',
+    borderWidth: 1,
+    borderColor: COLORS.inputBorder,
+    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    maxHeight: 240,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 20,
+    overflow: 'hidden',
   },
   checkboxContainer: {
     flexDirection: 'row',
