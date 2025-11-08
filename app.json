@@ -22,7 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.mangalounge.app"
+      "package": "com.mangalounge.app",
+      "permissions": []
     },
     "web": {
       "bundler": "metro",
@@ -45,6 +46,13 @@
         {
           "ios": {
             "useFrameworks": "static"
+          },
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24,
+            "buildToolsVersion": "35.0.0",
+            "kotlinVersion": "1.9.24"
           }
         }
       ]
