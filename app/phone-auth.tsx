@@ -44,6 +44,7 @@ export default function PhoneAuth() {
   const [nativeRecaptchaVisible, setNativeRecaptchaVisible] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const webRecaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
+  const navTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nativeRecaptchaPromise = useRef<{
     resolve: (token: string) => void;
     reject: (error: Error) => void;
@@ -247,10 +248,15 @@ export default function PhoneAuth() {
       setToastMessage('Verification code sent!');
       setToastType('success');
       setToastVisible(true);
-      setTimeout(() => {
+      navTimeoutRef.current = setTimeout(() => {
         router.push({ pathname: '/sms-verification', params: { verificationId: confirmation.verificationId, phoneNumber: fullPhoneNumber } });
+        navTimeoutRef.current = null;
       }, 1000);
     } catch (error: any) {
+      if (navTimeoutRef.current) {
+        clearTimeout(navTimeoutRef.current);
+        navTimeoutRef.current = null;
+      }
       setToastMessage(error.message || 'Failed to send verification code.');
       setToastType('error');
       setToastVisible(true);
@@ -258,6 +264,19 @@ export default function PhoneAuth() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (navTimeoutRef.current) {
+        clearTimeout(navTimeoutRef.current);
+        navTimeoutRef.current = null;
+      }
+      if (nativeRecaptchaPromise.current) {
+        nativeRecaptchaPromise.current.reject(new Error('reCAPTCHA was cancelled.'));
+        nativeRecaptchaPromise.current = null;
+      }
+    };
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
