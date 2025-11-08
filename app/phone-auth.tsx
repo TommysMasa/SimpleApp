@@ -1,7 +1,7 @@
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { router } from 'expo-router';
-import { getAuth, signInWithPhoneNumber } from 'firebase/auth';
-import React, { useRef, useState } from 'react';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import type { ApplicationVerifier } from 'firebase/auth';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Linking,
@@ -16,12 +16,16 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import type { WebViewMessageEvent } from 'react-native-webview';
+import { WebView } from 'react-native-webview';
 import { Country, CountryPicker } from '../components/CountryPicker';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast, { ToastType } from '../components/Toast';
-import { useAuth } from '../contexts/AuthContext';
-import { app, auth } from '../firebaseConfig';
+import { auth } from '../firebaseConfig';
 import { accessibilityHelpers } from '../utils/accessibility';
+
+const NativeWebView: typeof WebView | undefined = Platform.select({ web: undefined, default: WebView });
+const RECAPTCHA_SITE_KEY = process.env.EXPO_PUBLIC_RECAPTCHA_SITE_KEY;
 
 export default function PhoneAuth() {
   const [selectedCountry, setSelectedCountry] = useState<Country>({
@@ -37,20 +41,194 @@ export default function PhoneAuth() {
   const [toastType, setToastType] = useState<ToastType>('info');
   const [error, setError] = useState('');
   const [showRecaptchaIntro, setShowRecaptchaIntro] = useState(false);
+  const [nativeRecaptchaVisible, setNativeRecaptchaVisible] = useState(false);
   const inputRef = useRef<TextInput>(null);
-  const recaptchaVerifier = useRef<FirebaseRecaptchaVerifierModal | null>(null);
+  const webRecaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
+  const nativeRecaptchaPromise = useRef<{
+    resolve: (token: string) => void;
+    reject: (error: Error) => void;
+  } | null>(null);
 
   const validatePhoneNumber = (phone: string) => {
     const cleaned = phone.replace(/\D/g, '');
     return cleaned.length === 10;
   };
 
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      return;
+    }
+
+    const containerId = 'recaptcha-container';
+    let container = document.getElementById(containerId);
+    let created = false;
+
+    if (!container) {
+      container = document.createElement('div');
+      container.id = containerId;
+      container.style.display = 'none';
+      document.body.appendChild(container);
+      created = true;
+    }
+
+    return () => {
+      if (created && container?.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+      webRecaptchaVerifier.current?.clear();
+      webRecaptchaVerifier.current = null;
+    };
+  }, []);
+
+  const createVerifierFromToken = useCallback((token: string): ApplicationVerifier => {
+    let consumed = false;
+    return {
+      type: 'recaptcha',
+      verify: async () => {
+        if (consumed) {
+          throw new Error('reCAPTCHA token has already been used.');
+        }
+        consumed = true;
+        return token;
+      },
+    };
+  }, []);
+
+  const requestWebRecaptcha = useCallback(async (): Promise<ApplicationVerifier> => {
+    const containerId = 'recaptcha-container';
+    if (!webRecaptchaVerifier.current) {
+      webRecaptchaVerifier.current = new RecaptchaVerifier(auth, containerId, {
+        size: 'invisible',
+      });
+    }
+
+    try {
+      const token = await webRecaptchaVerifier.current.verify();
+      return createVerifierFromToken(token);
+    } finally {
+      webRecaptchaVerifier.current?.clear();
+      webRecaptchaVerifier.current = null;
+    }
+  }, [createVerifierFromToken]);
+
+  const handleNativeRecaptchaCancel = useCallback(() => {
+    const pending = nativeRecaptchaPromise.current;
+    if (pending) {
+      pending.reject(new Error('reCAPTCHA was cancelled.'));
+      nativeRecaptchaPromise.current = null;
+    }
+    setNativeRecaptchaVisible(false);
+  }, []);
+
+  const requestNativeRecaptcha = useCallback((): Promise<ApplicationVerifier> => {
+    if (!RECAPTCHA_SITE_KEY) {
+      return Promise.reject(new Error('Missing EXPO_PUBLIC_RECAPTCHA_SITE_KEY environment variable.'));
+    }
+
+    return new Promise<ApplicationVerifier>((resolve, reject) => {
+      nativeRecaptchaPromise.current = {
+        resolve: (token) => {
+          nativeRecaptchaPromise.current = null;
+          resolve(createVerifierFromToken(token));
+        },
+        reject: (error) => {
+          nativeRecaptchaPromise.current = null;
+          reject(error);
+        },
+      };
+      setNativeRecaptchaVisible(true);
+    });
+  }, [createVerifierFromToken]);
+
+  const handleNativeRecaptchaMessage = useCallback(
+    (event: WebViewMessageEvent) => {
+      try {
+        const data = JSON.parse(event.nativeEvent.data || '{}');
+        if (data.type === 'success' && typeof data.token === 'string') {
+          nativeRecaptchaPromise.current?.resolve(data.token);
+          setNativeRecaptchaVisible(false);
+          return;
+        }
+
+        if (data.type === 'expired') {
+          nativeRecaptchaPromise.current?.reject(new Error('reCAPTCHA expired. Please try again.'));
+        } else {
+          nativeRecaptchaPromise.current?.reject(new Error('Unable to complete reCAPTCHA challenge.'));
+        }
+      } catch {
+        nativeRecaptchaPromise.current?.reject(new Error('Unexpected reCAPTCHA response.'));
+      } finally {
+        nativeRecaptchaPromise.current = null;
+        setNativeRecaptchaVisible(false);
+      }
+    },
+    []
+  );
+
+  const recaptchaHtml = useMemo(() => {
+    if (!RECAPTCHA_SITE_KEY) {
+      return '';
+    }
+
+    return `<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body, html { margin: 0; padding: 0; height: 100%; background-color: #f9f9f9; }
+      .container { height: 100%; display: flex; align-items: center; justify-content: center; }
+    </style>
+    <script>
+      function onRecaptchaSuccess(token) {
+        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'success', token }));
+      }
+      function onRecaptchaError() {
+        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'error' }));
+      }
+      function onRecaptchaExpired() {
+        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'expired' }));
+      }
+      function renderRecaptcha() {
+        if (!window.grecaptcha) {
+          return;
+        }
+        window.grecaptcha.render('recaptcha-root', {
+          sitekey: '${RECAPTCHA_SITE_KEY}',
+          callback: onRecaptchaSuccess,
+          'error-callback': onRecaptchaError,
+          'expired-callback': onRecaptchaExpired,
+        });
+      }
+      window.onRecaptchaLoaded = function () {
+        if (window.grecaptcha) {
+          renderRecaptcha();
+        }
+      };
+    </script>
+    <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoaded&render=explicit" async defer></script>
+  </head>
+  <body>
+    <div class="container">
+      <div id="recaptcha-root"></div>
+    </div>
+  </body>
+</html>`;
+  }, []);
+
+  const requestAppVerifier = useCallback(async (): Promise<ApplicationVerifier> => {
+    if (Platform.OS === 'web') {
+      return requestWebRecaptcha();
+    }
+
+    return requestNativeRecaptcha();
+  }, [requestNativeRecaptcha, requestWebRecaptcha]);
+
   const handleContinue = () => {
     if (!phoneNumber) {
       setError('Please enter your phone number.');
       return;
     }
-    if (phoneNumber.length !== 10) {
+    if (!validatePhoneNumber(phoneNumber)) {
       setError('Invalid phone number. Enter 10 digits.');
       return;
     }
@@ -64,11 +242,8 @@ export default function PhoneAuth() {
     try {
       const cleaned = phoneNumber.replace(/\D/g, '');
       const fullPhoneNumber = `${selectedCountry.dialCode}${cleaned}`;
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        fullPhoneNumber,
-        recaptchaVerifier.current as unknown as import('firebase/auth').ApplicationVerifier
-      );
+      const appVerifier = await requestAppVerifier();
+      const confirmation = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier);
       setToastMessage('Verification code sent!');
       setToastType('success');
       setToastVisible(true);
@@ -107,27 +282,51 @@ export default function PhoneAuth() {
           </View>
         </View>
       </Modal>
-      {/* reCAPTCHA modal (always mounted, only used when needed) */}
-      <FirebaseRecaptchaVerifierModal
-        ref={recaptchaVerifier}
-        firebaseConfig={app.options}
-        attemptInvisibleVerification={false}
-      />
+      {/* Native reCAPTCHA modal */}
+      {NativeWebView ? (
+        <Modal
+          visible={nativeRecaptchaVisible}
+          animationType="fade"
+          transparent
+          onRequestClose={handleNativeRecaptchaCancel}
+        >
+          <View style={styles.recaptchaModalBg}>
+            <View style={styles.recaptchaCard}>
+              <Text style={styles.recaptchaTitle}>Verify you are human</Text>
+              {recaptchaHtml ? (
+                <NativeWebView
+                  originWhitelist={["*"]}
+                  javaScriptEnabled
+                  domStorageEnabled
+                  automaticallyAdjustContentInsets={false}
+                  onMessage={handleNativeRecaptchaMessage}
+                  source={{ html: recaptchaHtml }}
+                  style={styles.recaptchaWebview}
+                />
+              ) : (
+                <Text style={styles.errorText}>Missing reCAPTCHA configuration.</Text>
+              )}
+              <TouchableOpacity style={styles.recaptchaCancelBtn} onPress={handleNativeRecaptchaCancel}>
+                <Text style={styles.recaptchaCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <ScrollView
             contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+            keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
           >
             <View style={styles.header}>
               <Text style={styles.title}>My number is</Text>
-              <Text style={styles.subtitle}>We'll send a verification code to this number</Text>
+              <Text style={styles.subtitle}>We&apos;ll send a verification code to this number</Text>
             </View>
             <View style={styles.phoneInputContainer}>
-            {/* CountryPickerはそのまま */}
               <CountryPicker
                 selectedCountry={selectedCountry}
                 onCountrySelect={setSelectedCountry}
@@ -334,4 +533,10 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 15,
   },
-}); 
+  recaptchaWebview: {
+    width: 320,
+    height: 430,
+    backgroundColor: 'transparent',
+    alignSelf: 'stretch',
+  },
+});

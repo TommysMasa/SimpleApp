@@ -22,6 +22,9 @@ A React Native app built with Expo and Firebase for manga lounge membership mana
    EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
    EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
    EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+   # reCAPTCHA site key used for phone authentication challenges
+   EXPO_PUBLIC_RECAPTCHA_SITE_KEY=your_recaptcha_site_key
    
    # EAS Build Configuration
    EAS_PROJECT_ID=your_eas_project_id
