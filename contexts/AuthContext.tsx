@@ -1,11 +1,8 @@
 import {
-    ConfirmationResult,
-    RecaptchaVerifier,
     User,
     onAuthStateChanged,
     sendPasswordResetEmail,
-    signInWithEmailAndPassword,
-    signInWithPhoneNumber
+    signInWithEmailAndPassword
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -42,7 +39,6 @@ interface AuthContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   getUserData: () => Promise<UserData | null>;
-  sendPhoneVerification: (phoneNumber: string) => Promise<ConfirmationResult>;
   updateUserData: (updates: Partial<UserData>) => Promise<void>;
 }
 
@@ -72,27 +68,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return () => unsubscribe();
   }, []);
-
-  const sendPhoneVerification = async (phoneNumber: string): Promise<ConfirmationResult> => {
-    try {
-      // Create RecaptchaVerifier
-      const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible',
-        callback: (response: any) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber
-        },
-        'expired-callback': () => {
-          // Response expired. Ask user to solve reCAPTCHA again.
-        }
-      });
-
-      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-      return confirmationResult;
-    } catch (error: any) {
-      // エラーログを削除（セキュリティ上の理由）
-      throw error;
-    }
-  };
 
   const signUp = async (userData: any) => {
     try {
@@ -184,7 +159,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     resetPassword,
     getUserData,
-    sendPhoneVerification,
     updateUserData,
   };
 
