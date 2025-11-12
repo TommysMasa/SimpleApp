@@ -1,10 +1,10 @@
-import { Dimensions, PixelRatio } from 'react-native';
+import { Dimensions, PixelRatio, Platform } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Base dimensions (iPhone 12 Pro)
-const BASE_WIDTH = 390;
-const BASE_HEIGHT = 844;
+// Base dimensions (iPhone 12 Pro for iOS, common Android phone for Android)
+const BASE_WIDTH = Platform.OS === 'android' ? 360 : 390;
+const BASE_HEIGHT = Platform.OS === 'android' ? 640 : 844;
 
 // Screen size categories
 export const SCREEN_SIZES = {
@@ -15,10 +15,14 @@ export const SCREEN_SIZES = {
 
 export type ScreenSize = typeof SCREEN_SIZES[keyof typeof SCREEN_SIZES];
 
-// Get current screen size category
+// Get current screen size category (works for both iOS and Android)
 export const getScreenSize = (): ScreenSize => {
-  if (SCREEN_WIDTH <= 375) return SCREEN_SIZES.SMALL;
-  if (SCREEN_WIDTH <= 414) return SCREEN_SIZES.MEDIUM;
+  // Android devices typically have wider range of screen sizes
+  const smallThreshold = Platform.OS === 'android' ? 360 : 375;
+  const mediumThreshold = Platform.OS === 'android' ? 480 : 414;
+  
+  if (SCREEN_WIDTH <= smallThreshold) return SCREEN_SIZES.SMALL;
+  if (SCREEN_WIDTH <= mediumThreshold) return SCREEN_SIZES.MEDIUM;
   return SCREEN_SIZES.LARGE;
 };
 

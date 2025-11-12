@@ -25,7 +25,9 @@ import {
     UIManager,
     View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
+import { scaleFontSize, scaleSpacing, getResponsivePadding, getResponsiveMargin, getResponsiveBorderRadius, getResponsiveInputHeight } from '../utils/responsive';
 
 const COLORS = {
   primary: '#6B4E3D',
@@ -308,6 +310,11 @@ export default function SignUp() {
     }
   };
 
+  const responsivePadding = getResponsivePadding();
+  const responsiveMargin = getResponsiveMargin();
+  const responsiveBorderRadius = getResponsiveBorderRadius();
+  const insets = useSafeAreaInsets();
+
   return (
     <>
     <SafeAreaView style={styles.container}>
@@ -327,43 +334,54 @@ export default function SignUp() {
           ]}
         >
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { paddingHorizontal: responsivePadding.horizontal, marginTop: Math.max(insets.top, responsiveMargin.medium), marginBottom: responsiveMargin.medium }]}>
             <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.replace('/')}
-              accessibilityLabel="Back to Home"
+              style={[styles.backButton, { padding: scaleSpacing(8), borderRadius: responsiveBorderRadius.small }]}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/welcome');
+                }
+              }}
+              accessibilityLabel="Back"
             >
               <Ionicons name="arrow-back" size={24} color={COLORS.text} />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.title}>Manga Lounge</Text>
-              <Text style={styles.subtitle}>Complete Your Profile</Text>
+              <Text style={[styles.title, { fontSize: scaleFontSize(24) }]}>Manga Lounge</Text>
+              <Text style={[styles.subtitle, { fontSize: scaleFontSize(14), marginTop: scaleSpacing(2) }]}>Complete Your Profile</Text>
             </View>
-            <View style={styles.headerSpacer} />
+            <View style={[styles.headerSpacer, { width: scaleSpacing(40) }]} />
           </View>
 
           <ScrollView
             ref={scrollViewRef}
             style={styles.scrollView}
-            contentContainerStyle={styles.scrollViewContent}
+            contentContainerStyle={[
+              styles.scrollViewContent, 
+              { 
+                paddingBottom: Math.max(insets.bottom, responsivePadding.horizontal),
+              }
+            ]}
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="never"
+            keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
           >
-            <View style={styles.form}>
+            <View style={[styles.form, { paddingHorizontal: responsivePadding.horizontal, paddingBottom: responsivePadding.horizontal, gap: responsiveMargin.medium }]}>
               {/* Name Section */}
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
+              <View style={[styles.section, { borderRadius: responsiveBorderRadius.large, padding: responsivePadding.horizontal, gap: responsiveMargin.medium }]}>
+                <View style={[styles.sectionHeader, { gap: scaleSpacing(8), marginBottom: scaleSpacing(8) }]}>
                   <Ionicons name="person-outline" size={20} color={COLORS.primary} />
-                  <Text style={styles.sectionTitle}>Personal Information</Text>
+                  <Text style={[styles.sectionTitle, { fontSize: scaleFontSize(16) }]}>Personal Information</Text>
                 </View>
                 
-                <View style={styles.row}>
-                  <View style={[styles.inputGroup, { flex: 1 }]}>
-                    <Text style={styles.label}>First Name</Text>
+                <View style={[styles.row, { gap: responsiveMargin.small }]}>
+                  <View style={[styles.inputGroup, { flex: 1, gap: scaleSpacing(6) }]}>
+                    <Text style={[styles.label, { fontSize: scaleFontSize(14) }]}>First Name</Text>
                     <TextInput
                       ref={firstNameRef}
-                      style={styles.input}
+                      style={[styles.input, { borderRadius: responsiveBorderRadius.medium, paddingVertical: scaleSpacing(12), paddingHorizontal: responsivePadding.horizontal, fontSize: scaleFontSize(16), minHeight: getResponsiveInputHeight() }]}
                       placeholder="Enter first name"
                       value={firstName}
                       onChangeText={setFirstName}
@@ -372,11 +390,11 @@ export default function SignUp() {
                       onSubmitEditing={() => lastNameRef.current?.focus()}
                     />
                   </View>
-                  <View style={[styles.inputGroup, { flex: 1 }]}>
-                    <Text style={styles.label}>Last Name</Text>
+                  <View style={[styles.inputGroup, { flex: 1, gap: scaleSpacing(6) }]}>
+                    <Text style={[styles.label, { fontSize: scaleFontSize(14) }]}>Last Name</Text>
                     <TextInput
                       ref={lastNameRef}
-                      style={styles.input}
+                      style={[styles.input, { borderRadius: responsiveBorderRadius.medium, paddingVertical: scaleSpacing(12), paddingHorizontal: responsivePadding.horizontal, fontSize: scaleFontSize(16), minHeight: getResponsiveInputHeight() }]}
                       placeholder="Enter last name"
                       value={lastName}
                       onChangeText={setLastName}
@@ -387,11 +405,11 @@ export default function SignUp() {
                   </View>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Email Address</Text>
+                <View style={[styles.inputGroup, { gap: scaleSpacing(6) }]}>
+                  <Text style={[styles.label, { fontSize: scaleFontSize(14) }]}>Email Address</Text>
                   <TextInput
                     ref={emailRef}
-                    style={styles.input}
+                    style={[styles.input, { borderRadius: responsiveBorderRadius.medium, paddingVertical: scaleSpacing(12), paddingHorizontal: responsivePadding.horizontal, fontSize: scaleFontSize(16), minHeight: getResponsiveInputHeight() }]}
                     placeholder="example@email.com"
                     value={email}
                     onChangeText={setEmail}
@@ -405,18 +423,18 @@ export default function SignUp() {
               </View>
 
               {/* Birth Date Section */}
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
+              <View style={[styles.section, { borderRadius: responsiveBorderRadius.large, padding: responsivePadding.horizontal, gap: responsiveMargin.medium }]}>
+                <View style={[styles.sectionHeader, { gap: scaleSpacing(8), marginBottom: scaleSpacing(8) }]}>
                   <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
-                  <Text style={styles.sectionTitle}>Date of Birth</Text>
+                  <Text style={[styles.sectionTitle, { fontSize: scaleFontSize(16) }]}>Date of Birth</Text>
                 </View>
-                <View style={styles.dateContainer}>
+                <View style={[styles.dateContainer, { gap: scaleSpacing(8) }]}>
                   {/* Month */}
                   <View style={styles.datePickerContainer}>
-                    <Text style={styles.dateLabel}>Month</Text>
+                    <Text style={[styles.dateLabel, { fontSize: scaleFontSize(12), marginBottom: scaleSpacing(4) }]}>Month</Text>
                     <TextInput
                       ref={monthRef}
-                      style={styles.input}
+                      style={[styles.input, { borderRadius: responsiveBorderRadius.medium, paddingVertical: scaleSpacing(12), paddingHorizontal: responsivePadding.horizontal, fontSize: scaleFontSize(16), minHeight: getResponsiveInputHeight() }]}
                       placeholder="MM"
                       value={birthMonth}
                       onChangeText={text => {
@@ -440,10 +458,10 @@ export default function SignUp() {
                   </View>
                   {/* Day */}
                   <View style={styles.datePickerContainer}>
-                    <Text style={styles.dateLabel}>Day</Text>
+                    <Text style={[styles.dateLabel, { fontSize: scaleFontSize(12), marginBottom: scaleSpacing(4) }]}>Day</Text>
                     <TextInput
                       ref={dayRef}
-                      style={styles.input}
+                      style={[styles.input, { borderRadius: responsiveBorderRadius.medium, paddingVertical: scaleSpacing(12), paddingHorizontal: responsivePadding.horizontal, fontSize: scaleFontSize(16), minHeight: getResponsiveInputHeight() }]}
                       placeholder="DD"
                       value={birthDay}
                       onChangeText={text => {
@@ -467,10 +485,10 @@ export default function SignUp() {
                   </View>
                   {/* Year */}
                   <View style={styles.datePickerContainer}>
-                    <Text style={styles.dateLabel}>Year</Text>
+                    <Text style={[styles.dateLabel, { fontSize: scaleFontSize(12), marginBottom: scaleSpacing(4) }]}>Year</Text>
                     <TextInput
                       ref={yearRef}
-                      style={styles.input}
+                      style={[styles.input, { borderRadius: responsiveBorderRadius.medium, paddingVertical: scaleSpacing(12), paddingHorizontal: responsivePadding.horizontal, fontSize: scaleFontSize(16), minHeight: getResponsiveInputHeight() }]}
                       placeholder="YYYY"
                       value={birthYear}
                       onChangeText={text => {
@@ -500,20 +518,20 @@ export default function SignUp() {
               </View>
 
               {/* Additional Info Section */}
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
+              <View style={[styles.section, { borderRadius: responsiveBorderRadius.large, padding: responsivePadding.horizontal, gap: responsiveMargin.medium }]}>
+                <View style={[styles.sectionHeader, { gap: scaleSpacing(8), marginBottom: scaleSpacing(8) }]}>
                   <Ionicons name="settings-outline" size={20} color={COLORS.primary} />
-                  <Text style={styles.sectionTitle}>Additional Information</Text>
+                  <Text style={[styles.sectionTitle, { fontSize: scaleFontSize(16) }]}>Additional Information</Text>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Gender</Text>
+                <View style={[styles.inputGroup, { gap: scaleSpacing(6) }]}>
+                  <Text style={[styles.label, { fontSize: scaleFontSize(14) }]}>Gender</Text>
                   <TouchableOpacity 
                     ref={genderRef}
-                    style={styles.selectInput}
+                    style={[styles.selectInput, { borderRadius: responsiveBorderRadius.medium, paddingVertical: scaleSpacing(12), paddingHorizontal: responsivePadding.horizontal, minHeight: getResponsiveInputHeight() }]}
                     onPress={openGenderMenu}
                   >
-                    <Text style={[styles.selectText, !gender && styles.placeholderText]}>
+                    <Text style={[styles.selectText, !gender && styles.placeholderText, { fontSize: scaleFontSize(16) }]}>
                       {gender || 'Select gender'}
                     </Text>
                     <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
@@ -522,10 +540,10 @@ export default function SignUp() {
                   {/* Dropdown moved to a Modal to ensure it renders above other content */}
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Phone Number</Text>
+                <View style={[styles.inputGroup, { gap: scaleSpacing(6) }]}>
+                  <Text style={[styles.label, { fontSize: scaleFontSize(14) }]}>Phone Number</Text>
                   <TextInput
-                    style={[styles.input, styles.disabledInput]}
+                    style={[styles.input, styles.disabledInput, { borderRadius: responsiveBorderRadius.medium, paddingVertical: scaleSpacing(12), paddingHorizontal: responsivePadding.horizontal, fontSize: scaleFontSize(16), minHeight: getResponsiveInputHeight() }]}
                     placeholder="Phone number"
                     value={phone}
                     onChangeText={setPhone}
@@ -539,15 +557,15 @@ export default function SignUp() {
               </View>
 
               {/* Privacy Agreement */}
-              <View style={styles.section}>
+              <View style={[styles.section, { borderRadius: responsiveBorderRadius.large, padding: responsivePadding.horizontal }]}>
                 <TouchableOpacity 
-                  style={styles.checkboxContainer}
+                  style={[styles.checkboxContainer, { gap: responsiveMargin.small }]}
                   onPress={() => setPrivacyAgreed(!privacyAgreed)}
                 >
-                  <View style={[styles.checkbox, privacyAgreed && styles.checkboxChecked]}>
+                  <View style={[styles.checkbox, privacyAgreed && styles.checkboxChecked, { width: scaleSpacing(20), height: scaleSpacing(20), borderRadius: responsiveBorderRadius.small }]}>
                     {privacyAgreed && <Ionicons name="checkmark" size={14} color={COLORS.surface} />}
                   </View>
-                  <Text style={styles.checkboxLabel}>
+                  <Text style={[styles.checkboxLabel, { fontSize: scaleFontSize(14), lineHeight: scaleFontSize(20) }]}>
                     I agree to the <Text style={styles.linkText}>Privacy Policy</Text> and <Text style={styles.linkText}>Terms of Service</Text>
                   </Text>
                 </TouchableOpacity>
@@ -555,7 +573,17 @@ export default function SignUp() {
 
               {/* Submit Button */}
               <TouchableOpacity 
-                style={[styles.submitButton, loading && styles.buttonDisabled]} 
+                style={[
+                  styles.submitButton, 
+                  loading && styles.buttonDisabled,
+                  {
+                    borderRadius: responsiveBorderRadius.medium,
+                    paddingVertical: scaleSpacing(16),
+                    paddingHorizontal: responsivePadding.horizontal,
+                    gap: scaleSpacing(8),
+                    marginTop: scaleSpacing(8),
+                  }
+                ]} 
                 onPress={handleSignUp}
                 disabled={loading}
               >
@@ -563,17 +591,17 @@ export default function SignUp() {
                   <ActivityIndicator color={COLORS.surface} />
                 ) : (
                   <>
-                    <Text style={styles.submitButtonText}>Create Account</Text>
+                    <Text style={[styles.submitButtonText, { fontSize: scaleFontSize(16) }]}>Create Account</Text>
                     <Ionicons name="arrow-forward" size={20} color={COLORS.surface} />
                   </>
                 )}
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.linkButton}
+                style={[styles.linkButton, { marginTop: responsiveMargin.medium }]}
                 onPress={() => router.push('/welcome')}
               >
-                <Text style={styles.linkText}>Already have an account? Sign in</Text>
+                <Text style={[styles.linkText, { fontSize: scaleFontSize(14) }]}>Already have an account? Sign in</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -592,17 +620,18 @@ export default function SignUp() {
                 top: genderMenuRect.y + genderMenuRect.height + 4,
                 left: genderMenuRect.x,
                 width: Math.max(genderMenuRect.width, 200),
+                borderRadius: responsiveBorderRadius.medium,
               },
             ]}
           >
             {genderOptions.map((option) => (
               <TouchableOpacity
                 key={option}
-                style={styles.dropdownItem}
+                style={[styles.dropdownItem, { paddingVertical: scaleSpacing(12), paddingHorizontal: responsivePadding.horizontal }]}
                 onPress={() => handleGenderSelect(option)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.dropdownText}>{option}</Text>
+                <Text style={[styles.dropdownText, { fontSize: scaleFontSize(14) }]}>{option}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -625,14 +654,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 20,
   },
   backButton: {
-    padding: 8,
     backgroundColor: COLORS.surface,
-    borderRadius: 10,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -644,76 +668,58 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerSpacer: {
-    width: 40,
+    // width is set inline
   },
   title: {
-    fontSize: 24,
     fontWeight: '800',
     color: COLORS.text,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
     color: COLORS.textSecondary,
     fontWeight: '500',
-    marginTop: 2,
   },
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
-    paddingBottom: 40,
+    // paddingBottom is set inline
   },
   form: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    gap: 24,
+    // paddingHorizontal, paddingBottom, gap are set inline
   },
   section: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 20,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
-    gap: 16,
     position: 'relative',
     zIndex: 9996,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,
   },
   row: {
     flexDirection: 'row',
-    gap: 12,
   },
   inputGroup: {
-    gap: 6,
     position: 'relative',
     zIndex: 9997,
   },
   label: {
-    fontSize: 14,
     fontWeight: '500',
     color: COLORS.text,
   },
   input: {
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
     color: COLORS.text,
     backgroundColor: COLORS.surface,
   },
@@ -723,39 +729,29 @@ const styles = StyleSheet.create({
   },
   dateContainer: {
     flexDirection: 'row',
-    gap: 8,
   },
   datePickerContainer: {
     flex: 1,
     position: 'relative',
   },
   dateLabel: {
-    fontSize: 12,
     fontWeight: '500',
     color: COLORS.textSecondary,
-    marginBottom: 4,
   },
   datePickerButton: {
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
     backgroundColor: COLORS.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   datePickerText: {
-    fontSize: 14,
     color: COLORS.text,
   },
   selectInput: {
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -763,7 +759,6 @@ const styles = StyleSheet.create({
     zIndex: 99998,
   },
   selectText: {
-    fontSize: 16,
     color: COLORS.text,
   },
   placeholderText: {
@@ -776,7 +771,6 @@ const styles = StyleSheet.create({
     right: 0,
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
-    borderRadius: 12,
     backgroundColor: COLORS.surface,
     marginTop: 4,
     maxHeight: 200,
@@ -788,13 +782,10 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   dropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.inputBorder,
   },
   dropdownText: {
-    fontSize: 14,
     color: COLORS.text,
   },
   // Modal styles
@@ -806,7 +797,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
-    borderRadius: 12,
     backgroundColor: COLORS.surface,
     maxHeight: 240,
     shadowColor: COLORS.shadow,
@@ -819,12 +809,8 @@ const styles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
     borderWidth: 2,
     borderColor: COLORS.inputBorder,
     backgroundColor: COLORS.surface,
@@ -836,42 +822,32 @@ const styles = StyleSheet.create({
     borderColor: COLORS.success,
   },
   checkboxLabel: {
-    fontSize: 14,
     color: COLORS.text,
     flex: 1,
-    lineHeight: 20,
   },
   submitButton: {
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 6,
-    marginTop: 8,
   },
   buttonDisabled: {
     backgroundColor: COLORS.textSecondary,
   },
   submitButtonText: {
     color: COLORS.surface,
-    fontSize: 16,
     fontWeight: '600',
   },
   linkButton: {
     alignItems: 'center',
-    marginTop: 16,
   },
   linkText: {
     color: COLORS.secondary,
-    fontSize: 14,
     fontWeight: '500',
   },
 }); 

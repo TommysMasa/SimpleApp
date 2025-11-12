@@ -6,14 +6,17 @@ import {
     Animated,
     Easing,
     SafeAreaView,
+    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../contexts/AuthContext';
+import { scaleFontSize, scaleSpacing, getResponsivePadding, getResponsiveMargin, getResponsiveBorderRadius } from '../utils/responsive';
 
 const COLORS = {
   primary: '#6B4E3D',
@@ -103,12 +106,17 @@ export default function Barcode() {
     fetchUserData();
   }, [user, getUserData, authLoading]);
 
+  const responsivePadding = getResponsivePadding();
+  const responsiveMargin = getResponsiveMargin();
+  const responsiveBorderRadius = getResponsiveBorderRadius();
+  const insets = useSafeAreaInsets();
+
   if (authLoading || loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <View style={styles.loadingContent}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Loading membership data...</Text>
+          <Text style={[styles.loadingText, { marginTop: scaleSpacing(20), fontSize: scaleFontSize(16) }]}>Loading membership data...</Text>
         </View>
       </SafeAreaView>
     );
@@ -117,15 +125,26 @@ export default function Barcode() {
   if (!userData) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <View style={styles.errorIcon}>
+        <View style={[styles.errorContainer, { paddingHorizontal: responsivePadding.horizontal }]}>
+          <View style={[styles.errorIcon, { marginBottom: scaleSpacing(20) }]}>
             <Ionicons name="alert-circle-outline" size={60} color={COLORS.error} />
           </View>
-          <Text style={styles.errorText}>Failed to load membership data</Text>
-          <Text style={styles.errorSubText}>Please try logging out and logging back in</Text>
-          <TouchableOpacity style={styles.errorButton} onPress={() => router.replace('/')}>
+          <Text style={[styles.errorText, { fontSize: scaleFontSize(18), marginBottom: scaleSpacing(12) }]}>Failed to load membership data</Text>
+          <Text style={[styles.errorSubText, { fontSize: scaleFontSize(14), marginBottom: responsiveMargin.large, lineHeight: scaleFontSize(20) }]}>Please try logging out and logging back in</Text>
+          <TouchableOpacity 
+            style={[
+              styles.errorButton, 
+              {
+                paddingHorizontal: responsiveMargin.large,
+                paddingVertical: scaleSpacing(12),
+                borderRadius: responsiveBorderRadius.medium,
+                gap: scaleSpacing(8),
+              }
+            ]} 
+            onPress={() => router.replace('/')}
+          >
             <Ionicons name="arrow-back" size={20} color={COLORS.surface} />
-            <Text style={styles.errorButtonText}>Back to Menu</Text>
+            <Text style={[styles.errorButtonText, { fontSize: scaleFontSize(16) }]}>Back to Menu</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -136,44 +155,62 @@ export default function Barcode() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       
-      <Animated.View 
-        style={[
-          styles.content,
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
           {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
+            paddingHorizontal: responsivePadding.horizontal,
+            paddingTop: Math.max(insets.top, responsiveMargin.medium),
+            paddingBottom: Math.max(insets.bottom, responsiveMargin.large),
           }
         ]}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
+        <Animated.View 
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }
+          ]}
+        >
+          {/* Header */}
+          <View style={[styles.header, { marginTop: 0, marginBottom: responsiveMargin.large }]}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={[styles.backButton, { padding: scaleSpacing(12) }]}
             onPress={() => router.back()}
             accessibilityLabel="Back"
           >
-            <View style={styles.backButtonCircle}>
+            <View style={[styles.backButtonCircle, { borderRadius: scaleSpacing(20), width: scaleSpacing(40), height: scaleSpacing(40) }]}>
               <Ionicons name="arrow-back" size={24} color="#222" />
             </View>
           </TouchableOpacity>
           <View style={styles.headerTop}>
           <View style={styles.headerCenter}>
-            <Text style={styles.title}>Manga Lounge</Text>
-            <Text style={styles.subtitle}>Membership Card</Text>
+            <Text style={[styles.title, { fontSize: scaleFontSize(24) }]}>Manga Lounge</Text>
+            <Text style={[styles.subtitle, { fontSize: scaleFontSize(14), marginTop: scaleSpacing(2) }]}>Membership Card</Text>
             </View>
           </View>
-          <View style={styles.headerSpacer} />
+          <View style={[styles.headerSpacer, { width: scaleSpacing(40) }]} />
         </View>
 
         {/* User Info Card */}
-        <View style={styles.userInfoCard}>
-          <View style={styles.userIcon}>
+        <View style={[
+          styles.userInfoCard,
+          {
+            borderRadius: responsiveBorderRadius.large,
+            padding: responsivePadding.horizontal,
+            marginBottom: responsiveMargin.medium,
+          }
+        ]}>
+          <View style={[styles.userIcon, { width: scaleSpacing(48), height: scaleSpacing(48), borderRadius: scaleSpacing(24), marginBottom: scaleSpacing(12) }]}>
             <Ionicons name="person" size={24} color={COLORS.primary} />
           </View>
-          <Text style={styles.welcomeText}>
+          <Text style={[styles.welcomeText, { fontSize: scaleFontSize(18), marginBottom: scaleSpacing(4) }]}>
             {`${userData.firstName} ${userData.lastName}`.trim()}'s
           </Text>
-          <Text style={styles.membershipText}>
+          <Text style={[styles.membershipText, { fontSize: scaleFontSize(16) }]}>
             Membership Card
           </Text>
         </View>
@@ -184,12 +221,15 @@ export default function Barcode() {
             styles.qrContainer,
             {
               transform: [{ scale: qrScaleAnim }],
+              borderRadius: responsiveBorderRadius.large,
+              padding: responsiveMargin.large,
+              marginBottom: responsiveMargin.large,
             }
           ]}
         >
           <QRCode
             value={userData.membershipId}
-            size={160}
+            size={scaleSpacing(160)}
             color={COLORS.text}
             backgroundColor={COLORS.qrBackground}
             logo={undefined}
@@ -199,16 +239,24 @@ export default function Barcode() {
         </Animated.View>
 
         {/* Membership Details */}
-        <View style={styles.detailsContainer}>
-          <View style={styles.detailItem}>
+        <View style={[
+          styles.detailsContainer, 
+          { 
+            gap: responsiveMargin.medium,
+            borderRadius: responsiveBorderRadius.large,
+            padding: responsivePadding.horizontal,
+            marginBottom: responsiveMargin.large,
+          }
+        ]}>
+          <View style={[styles.detailItem, { gap: scaleSpacing(12) }]}>
             <Ionicons name={userData.isCheckedIn ? 'walk' : 'walk-outline'} size={18} color={userData.isCheckedIn ? COLORS.success : COLORS.textSecondary} />
-            <Text style={styles.detailLabel}>Status:</Text>
-            <Text style={[styles.detailValue, { color: userData.isCheckedIn ? COLORS.success : COLORS.textSecondary }]}> {userData.isCheckedIn ? 'Checked In' : 'Checked Out'} </Text>
+            <Text style={[styles.detailLabel, { fontSize: scaleFontSize(14), minWidth: scaleSpacing(80) }]}>Status:</Text>
+            <Text style={[styles.detailValue, { fontSize: scaleFontSize(14), color: userData.isCheckedIn ? COLORS.success : COLORS.textSecondary }]}> {userData.isCheckedIn ? 'Checked In' : 'Checked Out'} </Text>
           </View>
-          <View style={styles.detailItem}>
+          <View style={[styles.detailItem, { gap: scaleSpacing(12) }]}>
             <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
-            <Text style={styles.detailLabel}>Entry Time:</Text>
-            <Text style={styles.detailValue}>
+            <Text style={[styles.detailLabel, { fontSize: scaleFontSize(14), minWidth: scaleSpacing(80) }]}>Entry Time:</Text>
+            <Text style={[styles.detailValue, { fontSize: scaleFontSize(14) }]}>
               {userData.isCheckedIn && userData.lastEntryTime
                 ? (() => {
                     let dateObj;
@@ -223,7 +271,8 @@ export default function Barcode() {
             </Text>
           </View>
         </View>
-      </Animated.View>
+        </Animated.View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -243,8 +292,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 20,
-    fontSize: 16,
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
@@ -252,62 +299,46 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
   },
   errorIcon: {
-    marginBottom: 20,
   },
   errorText: {
-    fontSize: 18,
     color: COLORS.error,
     textAlign: 'center',
-    marginBottom: 12,
     fontWeight: '600',
   },
   errorSubText: {
-    fontSize: 14,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 20,
   },
   errorButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.error,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
   },
   errorButtonText: {
     color: COLORS.surface,
-    fontSize: 16,
     fontWeight: '600',
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 20,
-    marginBottom: 30,
   },
   backButton: {
     position: 'absolute',
     top: 0,
     left: 0,
     zIndex: 10,
-    padding: 12,
   },
   backButtonCircle: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -327,26 +358,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerSpacer: {
-    width: 40,
   },
   title: {
-    fontSize: 24,
     fontWeight: '800',
     color: COLORS.text,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
     color: COLORS.textSecondary,
     fontWeight: '500',
-    marginTop: 2,
   },
   userInfoCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 24,
     alignItems: 'center',
-    marginBottom: 20,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -354,22 +378,15 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   userIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     backgroundColor: `${COLORS.primary}20`,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
   welcomeText: {
-    fontSize: 18,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 4,
   },
   membershipText: {
-    fontSize: 16,
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
@@ -377,9 +394,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.qrBackground,
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 24,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -389,29 +403,21 @@ const styles = StyleSheet.create({
   },
   detailsContainer: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
-    gap: 16,
   },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
   detailLabel: {
-    fontSize: 14,
     color: COLORS.textSecondary,
     fontWeight: '500',
-    minWidth: 80,
   },
   detailValue: {
-    fontSize: 14,
     color: COLORS.text,
     fontWeight: '600',
     flex: 1,

@@ -2,10 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { getAuth, PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
 import React, { useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import app from '../firebaseConfig';
 import LoadingScreen from './LoadingScreen';
+import { scaleFontSize, scaleSpacing, getResponsivePadding, getResponsiveMargin, getResponsiveBorderRadius } from '../utils/responsive';
 
 export default function SMSVerification() {
   const params = useLocalSearchParams();
@@ -98,73 +100,103 @@ export default function SMSVerification() {
     return <LoadingScreen />;
   }
 
+  const responsivePadding = getResponsivePadding();
+  const responsiveMargin = getResponsiveMargin();
+  const responsiveBorderRadius = getResponsiveBorderRadius();
+  const insets = useSafeAreaInsets();
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={24}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <View style={styles.inner}>
-          <Text style={styles.title}>Verify your number</Text>
-          <Text style={styles.subtitle}>
-            Enter the code we’ve sent by text to{"\n"}
-            <Text style={styles.phone}>{phoneNumber}</Text>.
-          </Text>
-          <TouchableOpacity onPress={() => {/* Change number logic */}}>
-            <Text style={styles.changeNumber}>Change number</Text>
-          </TouchableOpacity>
-          <View style={styles.codeLabelRow}>
-            <Text style={styles.codeLabel}>Code</Text>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingHorizontal: responsivePadding.horizontal,
+              paddingTop: Math.max(insets.top, scaleSpacing(20)),
+              paddingBottom: Math.max(insets.bottom, scaleSpacing(100)),
+            }
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.inner}>
+            <Text style={[styles.title, { fontSize: scaleFontSize(32), marginBottom: scaleSpacing(12) }]}>Verify your number</Text>
+            <Text style={[styles.subtitle, { fontSize: scaleFontSize(16), marginBottom: scaleSpacing(8), lineHeight: scaleFontSize(22) }]}>
+              Enter the code we've sent by text to{"\n"}
+              <Text style={[styles.phone, { fontSize: scaleFontSize(18) }]}>{phoneNumber}</Text>.
+            </Text>
+            <TouchableOpacity onPress={() => {/* Change number logic */}}>
+              <Text style={[styles.changeNumber, { marginBottom: responsiveMargin.large, marginTop: scaleSpacing(4), fontSize: scaleFontSize(16) }]}>Change number</Text>
+            </TouchableOpacity>
+            <View style={[styles.codeLabelRow, { marginBottom: scaleSpacing(8) }]}>
+              <Text style={[styles.codeLabel, { fontSize: scaleFontSize(16) }]}>Code</Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => inputRef.current?.focus()}
+              style={[styles.codeInputTouch, { marginBottom: responsiveMargin.large }]}
+            >
+              <View style={[styles.codeRow, { gap: scaleSpacing(12), marginBottom: scaleSpacing(8) }]}>
+                {[...Array(6)].map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.codeBox,
+                      code.length === i ? styles.codeBoxActive : null,
+                      {
+                        width: scaleSpacing(48),
+                        height: scaleSpacing(56),
+                        borderRadius: responsiveBorderRadius.small,
+                      }
+                    ]}
+                  >
+                    <Text style={[styles.codeText, { fontSize: scaleFontSize(28) }]}>{code[i] || ''}</Text>
+                  </View>
+              ))}
+            </View>
+              <TextInput
+                ref={inputRef}
+                value={code}
+                onChangeText={handleChange}
+                keyboardType="number-pad"
+                maxLength={6}
+                style={styles.hiddenInput}
+                caretHidden={true}
+                autoFocus
+                selection={{ start: code.length, end: code.length }}
+                contextMenuHidden={true}
+                importantForAutofill="no"
+                autoComplete="off"
+                textContentType="oneTimeCode"
+              />
+            </TouchableOpacity>
+            <Text style={[styles.arrivalText, { fontSize: scaleFontSize(15), marginBottom: scaleSpacing(8) }]}>This code should arrive within {countdown}s</Text>
+            {message ? <Text style={[styles.message, { fontSize: scaleFontSize(15), marginBottom: scaleSpacing(8) }]}>{message}</Text> : null}
           </View>
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={() => inputRef.current?.focus()}
-            style={styles.codeInputTouch}
-          >
-            <View style={styles.codeRow}>
-              {[...Array(6)].map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.codeBox,
-                    code.length === i ? styles.codeBoxActive : null,
-                  ]}
-                >
-                  <Text style={styles.codeText}>{code[i] || ''}</Text>
-                </View>
-            ))}
-          </View>
-            <TextInput
-              ref={inputRef}
-              value={code}
-              onChangeText={handleChange}
-              keyboardType="number-pad"
-              maxLength={6}
-              style={styles.hiddenInput}
-              caretHidden={true}
-              autoFocus
-              selection={{ start: code.length, end: code.length }}
-              contextMenuHidden={true}
-              importantForAutofill="no"
-              autoComplete="off"
-              textContentType="oneTimeCode"
-            />
-          </TouchableOpacity>
-          <Text style={styles.arrivalText}>This code should arrive within {countdown}s</Text>
-          {message ? <Text style={styles.message}>{message}</Text> : null}
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              code.length === 6 && !loading ? styles.sendButtonActive : styles.sendButtonDisabled
-            ]}
-            onPress={() => handleVerify()}
-            disabled={code.length !== 6 || loading}
-          >
-            <Ionicons name="arrow-forward" size={32} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
+        <TouchableOpacity
+          style={[
+            styles.sendButton,
+            code.length === 6 && !loading ? styles.sendButtonActive : styles.sendButtonDisabled,
+            {
+              right: responsivePadding.horizontal,
+              bottom: Math.max(insets.bottom, scaleSpacing(20)),
+              width: scaleSpacing(56),
+              height: scaleSpacing(56),
+              borderRadius: scaleSpacing(28),
+            }
+          ]}
+          onPress={() => handleVerify()}
+          disabled={code.length !== 6 || loading}
+        >
+          <Ionicons name="arrow-forward" size={32} color="#fff" />
+        </TouchableOpacity>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -175,67 +207,51 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  inner: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
+    minHeight: '100%',
+  },
+  inner: {
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    position: 'relative', // Added for absolute positioning of send button
+    width: '100%',
   },
   title: {
-    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 12,
     color: '#111',
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
     color: '#222',
     textAlign: 'center',
-    marginBottom: 8,
-    lineHeight: 22,
   },
   phone: {
     fontWeight: 'bold',
     color: '#111',
-    fontSize: 18,
   },
   changeNumber: {
     color: '#111',
     fontWeight: 'bold',
     textDecorationLine: 'underline',
-    marginBottom: 24,
-    marginTop: 4,
-    fontSize: 16,
     textAlign: 'center',
   },
   codeLabelRow: {
     width: '100%',
     alignItems: 'flex-start',
-    marginBottom: 8,
   },
   codeLabel: {
-    fontSize: 16,
     color: '#222',
     fontWeight: '500',
   },
   codeInputTouch: {
-    marginBottom: 24,
     width: '100%',
     alignItems: 'center',
   },
   codeRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 12,
-    marginBottom: 8,
   },
   codeBox: {
-    width: 48,
-    height: 56,
-    borderRadius: 10,
     borderWidth: 2,
     borderColor: '#222',
     backgroundColor: '#f3f3f3',
@@ -247,7 +263,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e7ff',
   },
   codeText: {
-    fontSize: 28,
     color: '#111',
     fontWeight: 'bold',
     textAlign: 'center',
@@ -260,23 +275,14 @@ const styles = StyleSheet.create({
   },
   arrivalText: {
     color: '#444',
-    fontSize: 15,
-    marginBottom: 8,
     textAlign: 'center',
   },
   message: {
     color: '#FF6B6B',
-    fontSize: 15,
-    marginBottom: 8,
     textAlign: 'center',
   },
   sendButton: {
     position: 'absolute',
-    right: 24,
-    bottom: 40,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
     backgroundColor: '#bbb',
     alignItems: 'center',
     justifyContent: 'center',

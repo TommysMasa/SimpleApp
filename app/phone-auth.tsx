@@ -16,12 +16,14 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Country, CountryPicker } from '../components/CountryPicker';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast, { ToastType } from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
 import { app, auth } from '../firebaseConfig';
 import { accessibilityHelpers } from '../utils/accessibility';
+import { scaleFontSize, scaleSpacing, getResponsivePadding, getResponsiveMargin, getResponsiveBorderRadius, getResponsiveInputHeight, getResponsiveButtonHeight } from '../utils/responsive';
 
 export default function PhoneAuth() {
   const [selectedCountry, setSelectedCountry] = useState<Country>({
@@ -84,6 +86,11 @@ export default function PhoneAuth() {
     }
   };
 
+  const responsivePadding = getResponsivePadding();
+  const responsiveMargin = getResponsiveMargin();
+  const responsiveBorderRadius = getResponsiveBorderRadius();
+  const insets = useSafeAreaInsets();
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -95,14 +102,14 @@ export default function PhoneAuth() {
         onRequestClose={() => setShowRecaptchaIntro(false)}
       >
         <View style={styles.recaptchaModalBg}>
-          <View style={styles.recaptchaCard}>
-            <Text style={styles.recaptchaTitle}>Protecting your account</Text>
-            <Text style={styles.recaptchaSubtitle}>Please solve this puzzle so we know you are a real person</Text>
-            <TouchableOpacity style={styles.recaptchaStartBtn} onPress={handleStartRecaptcha}>
-              <Text style={styles.recaptchaStartBtnText}>Start Verification</Text>
+          <View style={[styles.recaptchaCard, { width: '88%', borderRadius: responsiveBorderRadius.large, padding: scaleSpacing(28) }]}>
+            <Text style={[styles.recaptchaTitle, { fontSize: scaleFontSize(22), marginBottom: scaleSpacing(12) }]}>Protecting your account</Text>
+            <Text style={[styles.recaptchaSubtitle, { fontSize: scaleFontSize(16), marginBottom: scaleSpacing(28) }]}>Please solve this puzzle so we know you are a real person</Text>
+            <TouchableOpacity style={[styles.recaptchaStartBtn, { borderRadius: responsiveBorderRadius.small, paddingVertical: scaleSpacing(14), paddingHorizontal: scaleSpacing(32), marginBottom: scaleSpacing(12) }]} onPress={handleStartRecaptcha}>
+              <Text style={[styles.recaptchaStartBtnText, { fontSize: scaleFontSize(16) }]}>Start Verification</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.recaptchaCancelBtn} onPress={() => setShowRecaptchaIntro(false)}>
-              <Text style={styles.recaptchaCancelBtnText}>Cancel</Text>
+            <TouchableOpacity style={[styles.recaptchaCancelBtn, { paddingVertical: scaleSpacing(8), paddingHorizontal: scaleSpacing(16) }]} onPress={() => setShowRecaptchaIntro(false)}>
+              <Text style={[styles.recaptchaCancelBtnText, { fontSize: scaleFontSize(15) }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -115,18 +122,26 @@ export default function PhoneAuth() {
       />
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
         >
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent, 
+              { 
+                paddingHorizontal: responsivePadding.horizontal,
+                paddingTop: Math.max(insets.top, responsiveMargin.medium),
+                paddingBottom: Math.max(insets.bottom, responsivePadding.horizontal),
+              }
+            ]}
           keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
           >
-            <View style={styles.header}>
-              <Text style={styles.title}>My number is</Text>
-              <Text style={styles.subtitle}>We'll send a verification code to this number</Text>
+            <View style={[styles.header, { marginBottom: responsiveMargin.large }]}>
+              <Text style={[styles.title, { fontSize: scaleFontSize(32), marginBottom: scaleSpacing(12) }]}>My number is</Text>
+              <Text style={[styles.subtitle, { fontSize: scaleFontSize(16), marginBottom: scaleSpacing(24), lineHeight: scaleFontSize(24) }]}>We'll send a verification code to this number</Text>
             </View>
-            <View style={styles.phoneInputContainer}>
+            <View style={[styles.phoneInputContainer, { marginBottom: responsiveMargin.medium, gap: scaleSpacing(12) }]}>
             {/* CountryPickerはそのまま */}
               <CountryPicker
                 selectedCountry={selectedCountry}
@@ -135,7 +150,17 @@ export default function PhoneAuth() {
               />
               <TextInput
                 ref={inputRef}
-                style={[styles.phoneInput, error && styles.inputError]}
+                style={[
+                  styles.phoneInput, 
+                  error && styles.inputError,
+                  {
+                    borderRadius: responsiveBorderRadius.medium,
+                    paddingHorizontal: responsivePadding.horizontal,
+                    paddingVertical: scaleSpacing(16),
+                    fontSize: scaleFontSize(18),
+                    minHeight: getResponsiveInputHeight(),
+                  }
+                ]}
                 value={phoneNumber}
               onChangeText={text => {
                 setError('');
@@ -161,15 +186,24 @@ export default function PhoneAuth() {
                 })}
               />
             </View>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            <Text style={styles.privacyText}>
+            {error ? <Text style={[styles.errorText, { fontSize: scaleFontSize(14), marginBottom: scaleSpacing(8) }]}>{error}</Text> : null}
+            <Text style={[styles.privacyText, { fontSize: scaleFontSize(14), lineHeight: scaleFontSize(20), marginBottom: responsiveMargin.large }]}>
               By continuing, you agree to our{' '}
               <Text style={styles.linkText} onPress={() => Linking.openURL('https://docs.google.com/document/d/1MzkEqOgJxMN331SuUivt8S8Fs_7lqrz1pCqsijoE3Tw/edit?usp=sharing')}>Terms of Service</Text> and{' '}
               <Text style={styles.linkText} onPress={() => Linking.openURL('https://docs.google.com/document/d/14t9aHzjedxMGTB7-3JncpY0ARyljt3pzFv3b87Oe7z8/edit?usp=sharing')}>Privacy Policy</Text>
             </Text>
-            <View style={styles.buttonContainer}>
+            <View style={[styles.buttonContainer, { paddingTop: scaleSpacing(8), paddingBottom: responsivePadding.horizontal }]}>
               <TouchableOpacity
-                style={[styles.continueButton, (phoneNumber.replace(/\D/g, '').length !== 10 || loading) && styles.continueButtonDisabled]}
+                style={[
+                  styles.continueButton, 
+                  (phoneNumber.replace(/\D/g, '').length !== 10 || loading) && styles.continueButtonDisabled,
+                  {
+                    borderRadius: responsiveBorderRadius.medium,
+                    paddingVertical: scaleSpacing(16),
+                    paddingHorizontal: scaleSpacing(40),
+                    minHeight: getResponsiveButtonHeight(),
+                  }
+                ]}
                 onPress={handleContinue}
                 disabled={phoneNumber.replace(/\D/g, '').length !== 10 || loading}
                 {...accessibilityHelpers.getLoadingButtonProps('Continue', loading)}
@@ -177,7 +211,7 @@ export default function PhoneAuth() {
                 {loading ? (
                   <LoadingSpinner size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.continueButtonText}>Continue</Text>
+                  <Text style={[styles.continueButtonText, { fontSize: scaleFontSize(18) }]}>Continue</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -201,31 +235,22 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
     justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
   },
   title: {
-    fontSize: 32,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
   },
   phoneInputContainer: {
     flexDirection: 'row',
-    marginBottom: 16,
-    gap: 12,
     alignItems: 'center',
   },
   countryPicker: {
@@ -234,12 +259,8 @@ const styles = StyleSheet.create({
   phoneInput: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 18,
     color: '#111827',
     fontWeight: '500',
   },
@@ -248,39 +269,29 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF6B6B',
-    fontSize: 14,
-    marginBottom: 8,
     marginLeft: 4,
   },
   privacyText: {
-    fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
   },
   linkText: {
     color: '#6366F1',
     fontWeight: '600',
   },
   buttonContainer: {
-    paddingTop: 8,
-    paddingBottom: 32,
     alignItems: 'center',
   },
   continueButton: {
     backgroundColor: '#6366F1',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 40,
     alignItems: 'center',
+    width: '100%',
   },
   continueButtonDisabled: {
     backgroundColor: '#D1D5DB',
   },
   continueButtonText: {
     color: '#fff',
-    fontSize: 18,
     fontWeight: '600',
   },
   recaptchaModalBg: {

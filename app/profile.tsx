@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
+import { scaleFontSize, scaleSpacing, getResponsivePadding, getResponsiveMargin, getResponsiveBorderRadius, getResponsiveInputHeight } from '../utils/responsive';
 
 export default function ProfileScreen() {
   const { getUserData, updateUserData } = useAuth();
@@ -206,63 +207,126 @@ export default function ProfileScreen() {
     }
   };
 
+  const responsivePadding = getResponsivePadding();
+  const responsiveMargin = getResponsiveMargin();
+  const responsiveBorderRadius = getResponsiveBorderRadius();
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <KeyboardAvoidingView 
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        keyboardVerticalOffset={0}
       >
         <TouchableOpacity
-          style={[styles.backButton, { top: insets.top + 8 }]}
+          style={[styles.backButton, { top: insets.top + scaleSpacing(8), padding: scaleSpacing(12) }]}
           onPress={() => router.back()}
           accessibilityLabel="Back"
         >
-          <View style={styles.backButtonCircle}>
+          <View style={[styles.backButtonCircle, { borderRadius: scaleSpacing(20), width: scaleSpacing(40), height: scaleSpacing(40) }]}>
             <Ionicons name="arrow-back" size={24} color="#222" />
           </View>
         </TouchableOpacity>
         <ScrollView 
-          contentContainerStyle={styles.inner} 
+          contentContainerStyle={[
+            styles.inner,
+            {
+              paddingHorizontal: responsivePadding.horizontal,
+              paddingTop: Math.max(insets.top + scaleSpacing(40), scaleSpacing(60)),
+              paddingBottom: Math.max(insets.bottom, responsiveMargin.large),
+            }
+          ]} 
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title}>Profile</Text>
-          <Text style={styles.label}>First Name</Text>
+          <Text style={[styles.title, { fontSize: scaleFontSize(32), marginBottom: responsiveMargin.large }]}>Profile</Text>
+          <Text style={[styles.label, { fontSize: scaleFontSize(14), marginBottom: scaleSpacing(4), marginTop: scaleSpacing(4) }]}>First Name</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                borderRadius: responsiveBorderRadius.medium,
+                paddingHorizontal: responsivePadding.horizontal,
+                paddingVertical: scaleSpacing(14),
+                fontSize: scaleFontSize(16),
+                marginBottom: responsiveMargin.medium,
+                minHeight: getResponsiveInputHeight(),
+              }
+            ]}
             placeholder="First Name"
             value={firstName}
             onChangeText={setFirstName}
           />
-          <Text style={styles.label}>Last Name</Text>
+          <Text style={[styles.label, { fontSize: scaleFontSize(14), marginBottom: scaleSpacing(4), marginTop: scaleSpacing(4) }]}>Last Name</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                borderRadius: responsiveBorderRadius.medium,
+                paddingHorizontal: responsivePadding.horizontal,
+                paddingVertical: scaleSpacing(14),
+                fontSize: scaleFontSize(16),
+                marginBottom: responsiveMargin.medium,
+                minHeight: getResponsiveInputHeight(),
+              }
+            ]}
             placeholder="Last Name"
             value={lastName}
             onChangeText={setLastName}
           />
-          <Text style={styles.label}>Date of Birth</Text>
+          <Text style={[styles.label, { fontSize: scaleFontSize(14), marginBottom: scaleSpacing(4), marginTop: scaleSpacing(4) }]}>Date of Birth</Text>
           <TextInput
-            style={[styles.input, dateError ? styles.inputError : null]}
+            style={[
+              styles.input, 
+              dateError ? styles.inputError : null,
+              {
+                borderRadius: responsiveBorderRadius.medium,
+                paddingHorizontal: responsivePadding.horizontal,
+                paddingVertical: scaleSpacing(14),
+                fontSize: scaleFontSize(16),
+                marginBottom: responsiveMargin.medium,
+                minHeight: getResponsiveInputHeight(),
+              }
+            ]}
             placeholder="Date of Birth (MM/DD/YYYY)"
             value={dateOfBirth}
             onChangeText={handleDateInputChange}
             keyboardType="numeric"
             maxLength={10}
           />
-          {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
-          <Text style={styles.label}>Gender</Text>
+          {dateError ? <Text style={[styles.errorText, { fontSize: scaleFontSize(14), marginTop: -scaleSpacing(12), marginBottom: responsiveMargin.medium }]}>{dateError}</Text> : null}
+          <Text style={[styles.label, { fontSize: scaleFontSize(14), marginBottom: scaleSpacing(4), marginTop: scaleSpacing(4) }]}>Gender</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                borderRadius: responsiveBorderRadius.medium,
+                paddingHorizontal: responsivePadding.horizontal,
+                paddingVertical: scaleSpacing(14),
+                fontSize: scaleFontSize(16),
+                marginBottom: responsiveMargin.medium,
+                minHeight: getResponsiveInputHeight(),
+              }
+            ]}
             placeholder="Gender"
             value={gender}
             onChangeText={setGender}
           />
-          <Text style={styles.label}>Email</Text>
+          <Text style={[styles.label, { fontSize: scaleFontSize(14), marginBottom: scaleSpacing(4), marginTop: scaleSpacing(4) }]}>Email</Text>
           <TextInput
-            style={[styles.input, emailError ? styles.inputError : null]}
+            style={[
+              styles.input, 
+              emailError ? styles.inputError : null,
+              {
+                borderRadius: responsiveBorderRadius.medium,
+                paddingHorizontal: responsivePadding.horizontal,
+                paddingVertical: scaleSpacing(14),
+                fontSize: scaleFontSize(16),
+                marginBottom: responsiveMargin.medium,
+                minHeight: getResponsiveInputHeight(),
+              }
+            ]}
             placeholder="Email"
             value={email}
             onChangeText={handleEmailChange}
@@ -270,25 +334,49 @@ export default function ProfileScreen() {
             autoCapitalize="none"
             autoComplete="email"
           />
-          {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-          <Text style={styles.label}>Phone Number</Text>
+          {emailError ? <Text style={[styles.errorText, { fontSize: scaleFontSize(14), marginTop: -scaleSpacing(12), marginBottom: responsiveMargin.medium }]}>{emailError}</Text> : null}
+          <Text style={[styles.label, { fontSize: scaleFontSize(14), marginBottom: scaleSpacing(4), marginTop: scaleSpacing(4) }]}>Phone Number</Text>
           <TextInput
-            style={[styles.input, styles.disabledInput]}
+            style={[
+              styles.input, 
+              styles.disabledInput,
+              {
+                borderRadius: responsiveBorderRadius.medium,
+                paddingHorizontal: responsivePadding.horizontal,
+                paddingVertical: scaleSpacing(14),
+                fontSize: scaleFontSize(16),
+                marginBottom: responsiveMargin.medium,
+                minHeight: getResponsiveInputHeight(),
+              }
+            ]}
             placeholder="Phone Number"
             value={phone}
             editable={false}
             selectTextOnFocus={false}
             placeholderTextColor="#9CA3AF"
           />
-          <TouchableOpacity style={[styles.button, saving && styles.buttonDisabled]} onPress={handleSave} disabled={saving}>
+          <TouchableOpacity 
+            style={[
+              styles.button, 
+              saving && styles.buttonDisabled,
+              {
+                borderRadius: responsiveBorderRadius.medium,
+                paddingVertical: scaleSpacing(14),
+                paddingHorizontal: scaleSpacing(32),
+                marginTop: scaleSpacing(8),
+              }
+            ]} 
+            onPress={handleSave} 
+            disabled={saving}
+          >
             {saving ? (
-              <Ionicons name="checkmark-done" size={20} color="#fff" style={{ marginRight: 8 }} />
+              <Ionicons name="checkmark-done" size={20} color="#fff" style={{ marginRight: scaleSpacing(8) }} />
             ) : (
-              <Ionicons name="save-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+              <Ionicons name="save-outline" size={20} color="#fff" style={{ marginRight: scaleSpacing(8) }} />
             )}
-            <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save'}</Text>
+            <Text style={[styles.buttonText, { fontSize: scaleFontSize(18) }]}>{saving ? 'Saving...' : 'Save'}</Text>
           </TouchableOpacity>
-          {saved && <Text style={styles.success}>Profile saved!</Text>}
+          {saved && <Text style={[styles.success, { fontSize: scaleFontSize(16), marginTop: responsiveMargin.medium }]}>Profile saved!</Text>}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -304,59 +392,41 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 40,
+    width: '100%',
   },
   title: {
-    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 24,
     color: '#111',
     textAlign: 'center',
   },
   label: {
     alignSelf: 'flex-start',
-    fontSize: 14,
     color: '#6B7280',
-    marginBottom: 4,
-    marginTop: 4,
     fontWeight: '500',
+    width: '100%',
   },
   input: {
     width: '100%',
     backgroundColor: '#F9FAFB',
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
     color: '#111827',
     fontWeight: '500',
-    marginBottom: 16,
   },
   button: {
     flexDirection: 'row',
     backgroundColor: '#6366F1',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
     alignItems: 'center',
-    marginTop: 8,
   },
   buttonDisabled: {
     backgroundColor: '#D1D5DB',
   },
   buttonText: {
     color: '#fff',
-    fontSize: 18,
     fontWeight: '600',
   },
   success: {
     color: '#22C55E',
-    fontSize: 16,
-    marginTop: 16,
     textAlign: 'center',
   },
   disabledInput: {
@@ -367,13 +437,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     zIndex: 10,
-    padding: 12,
   },
   backButtonCircle: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -388,9 +454,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#EF4444',
-    fontSize: 14,
-    marginTop: -12,
-    marginBottom: 16,
     alignSelf: 'flex-start',
+    width: '100%',
   },
 }); 

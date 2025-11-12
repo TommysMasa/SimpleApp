@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "640646199364",
+    "project_id": "simpleapp-5c1c6",
+    "storage_bucket": "simpleapp-5c1c6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:640646199364:android:047f8c2cda9d438dfca411",
+        "android_client_info": {
+          "package_name": "com.mangalounge.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLcEIOIW7ftDr6-C7uhtPGnL4AqBrfHG8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

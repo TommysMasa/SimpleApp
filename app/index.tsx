@@ -9,13 +9,16 @@ import {
   Easing,
   Platform,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
+import { scaleFontSize, scaleSpacing, getResponsivePadding, getResponsiveMargin, getResponsiveBorderRadius } from '../utils/responsive';
 
 const { width, height } = Dimensions.get('window');
 
@@ -172,28 +175,44 @@ export default function Index() {
     }
   };
 
+  const responsivePadding = getResponsivePadding();
+  const responsiveMargin = getResponsiveMargin();
+  const responsiveBorderRadius = getResponsiveBorderRadius();
+  const insets = useSafeAreaInsets();
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       
-      <Animated.View 
-        style={[
-          styles.content,
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
           {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
+            paddingHorizontal: responsivePadding.horizontal,
+            paddingTop: Math.max(insets.top, responsiveMargin.medium),
+            paddingBottom: Math.max(insets.bottom, responsiveMargin.medium),
           }
         ]}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
+        <Animated.View 
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }
+          ]}
+        >
+          {/* Header */}
+          <View style={[styles.header, { marginTop: 0, marginBottom: responsiveMargin.large }]}>
+          <View style={[styles.headerTop, { marginBottom: responsiveMargin.medium }]}>
             <View style={styles.titleContainer}>
-              <Text style={styles.logo}>Manga Lounge</Text>
-              <Text style={styles.subtitle}>Your Digital Experience</Text>
+              <Text style={[styles.logo, { fontSize: scaleFontSize(32) }]}>Manga Lounge</Text>
+              <Text style={[styles.subtitle, { fontSize: scaleFontSize(16), marginTop: scaleSpacing(4) }]}>Your Digital Experience</Text>
             </View>
             <TouchableOpacity
-              style={styles.logoutButton}
+              style={[styles.logoutButton, { padding: scaleSpacing(12), borderRadius: responsiveBorderRadius.medium }]}
               onPress={handleLogout}
               accessibilityLabel="Logout"
             >
@@ -201,34 +220,34 @@ export default function Index() {
             </TouchableOpacity>
           </View>
           
-          <View style={styles.welcomeContainer}>
-            <Text style={styles.welcomeText}>
+          <View style={[styles.welcomeContainer, { padding: responsivePadding.horizontal, borderRadius: responsiveBorderRadius.large }]}>
+            <Text style={[styles.welcomeText, { fontSize: scaleFontSize(16) }]}>
               Welcome back,
             </Text>
-            <Text style={styles.userName}>
+            <Text style={[styles.userName, { fontSize: scaleFontSize(24), marginTop: scaleSpacing(4) }]}>
               {profile ? `${profile.firstName} ${profile.lastName}`.trim() : user?.email || 'User'}
             </Text>
           </View>
         </View>
 
         {/* Main Menu */}
-        <View style={styles.menuContainer}>
+        <View style={[styles.menuContainer, { gap: responsiveMargin.medium }]}>
           <Animated.View style={{ transform: [{ scale: scaleAnim1 }] }}>
             <TouchableOpacity
-              style={[styles.menuCard, styles.membershipCard]}
+              style={[styles.menuCard, styles.membershipCard, { borderRadius: responsiveBorderRadius.large, minHeight: scaleSpacing(140) }]}
               onPress={handleMembershipPress}
               activeOpacity={0.9}
               accessibilityLabel="Membership Barcode"
             >
-              <View style={styles.cardContent}>
-                <View style={styles.cardIconContainer}>
+              <View style={[styles.cardContent, { padding: responsivePadding.horizontal, minHeight: scaleSpacing(140) }]}>
+                <View style={[styles.cardIconContainer, { marginRight: responsiveMargin.medium }]}>
                   <Ionicons name="qr-code-outline" size={48} color={COLORS.membershipText} />
                 </View>
                 <View style={styles.cardTextContainer}>
-                  <Text style={[styles.cardTitle, { color: COLORS.membershipText }]}>Membership</Text>
-                  <Text style={[styles.cardSubtitle, { color: `${COLORS.membershipText}CC` }]}>Show your QR code</Text>
+                  <Text style={[styles.cardTitle, { color: COLORS.membershipText, fontSize: scaleFontSize(22), marginBottom: scaleSpacing(4) }]}>Membership</Text>
+                  <Text style={[styles.cardSubtitle, { color: `${COLORS.membershipText}CC`, fontSize: scaleFontSize(14) }]}>Show your QR code</Text>
                 </View>
-                <View style={styles.cardArrow}>
+                <View style={[styles.cardArrow, { borderRadius: responsiveBorderRadius.large, padding: scaleSpacing(8) }]}>
                   <Ionicons name="arrow-forward" size={20} color={COLORS.membershipText} />
                 </View>
               </View>
@@ -237,20 +256,20 @@ export default function Index() {
 
           <Animated.View style={{ transform: [{ scale: scaleAnim2 }] }}>
             <TouchableOpacity
-              style={[styles.menuCard, styles.contactCard]}
+              style={[styles.menuCard, styles.contactCard, { borderRadius: responsiveBorderRadius.large, minHeight: scaleSpacing(140) }]}
               onPress={handleSettingsPress}
               activeOpacity={0.9}
               accessibilityLabel="Settings"
             >
-              <View style={styles.cardContent}>
-                <View style={styles.cardIconContainer}>
+              <View style={[styles.cardContent, { padding: responsivePadding.horizontal, minHeight: scaleSpacing(140) }]}>
+                <View style={[styles.cardIconContainer, { marginRight: responsiveMargin.medium }]}>
                   <Ionicons name="settings-outline" size={48} color={COLORS.contactText} />
                 </View>
                 <View style={styles.cardTextContainer}>
-                  <Text style={[styles.cardTitle, { color: COLORS.contactText }]}>Settings</Text>
-                  <Text style={[styles.cardSubtitle, { color: `${COLORS.contactText}CC` }]}>Manage your account</Text>
+                  <Text style={[styles.cardTitle, { color: COLORS.contactText, fontSize: scaleFontSize(22), marginBottom: scaleSpacing(4) }]}>Settings</Text>
+                  <Text style={[styles.cardSubtitle, { color: `${COLORS.contactText}CC`, fontSize: scaleFontSize(14) }]}>Manage your account</Text>
                 </View>
-                <View style={styles.cardArrow}>
+                <View style={[styles.cardArrow, { borderRadius: responsiveBorderRadius.large, padding: scaleSpacing(8) }]}>
                   <Ionicons name="arrow-forward" size={20} color={COLORS.contactText} />
                 </View>
               </View>
@@ -259,16 +278,16 @@ export default function Index() {
         </View>
 
         {/* Bottom Stats */}
-        <View style={{ flexDirection: 'row', gap: 16, marginBottom: 20 }}>
-          <View style={{ flex: 1, backgroundColor: COLORS.surface, borderRadius: 16, paddingVertical: 24, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 }}>
-            <Ionicons name={profile?.isCheckedIn ? 'walk' : 'walk-outline'} size={32} color={profile?.isCheckedIn ? COLORS.success : COLORS.textSecondary} style={{ marginBottom: 10 }} />
-            <Text style={{ fontSize: 15, color: COLORS.textSecondary, fontWeight: '500', marginBottom: 2, letterSpacing: 0.2 }}>Status</Text>
-            <Text style={{ fontSize: 18, color: COLORS.text, fontWeight: '700', letterSpacing: 0.3 }}>{profile?.isCheckedIn ? 'Checked In' : 'Checked Out'}</Text>
+        <View style={{ flexDirection: 'row', gap: responsiveMargin.medium, marginBottom: responsiveMargin.medium }}>
+          <View style={{ flex: 1, backgroundColor: COLORS.surface, borderRadius: responsiveBorderRadius.large, paddingVertical: scaleSpacing(24), paddingHorizontal: scaleSpacing(12), alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 }}>
+            <Ionicons name={profile?.isCheckedIn ? 'walk' : 'walk-outline'} size={32} color={profile?.isCheckedIn ? COLORS.success : COLORS.textSecondary} style={{ marginBottom: scaleSpacing(10) }} />
+            <Text style={{ fontSize: scaleFontSize(15), color: COLORS.textSecondary, fontWeight: '500', marginBottom: scaleSpacing(2), letterSpacing: 0.2 }}>Status</Text>
+            <Text style={{ fontSize: scaleFontSize(18), color: COLORS.text, fontWeight: '700', letterSpacing: 0.3 }}>{profile?.isCheckedIn ? 'Checked In' : 'Checked Out'}</Text>
           </View>
-          <View style={{ flex: 1, backgroundColor: COLORS.surface, borderRadius: 16, paddingVertical: 24, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 }}>
-            <Ionicons name="time-outline" size={32} color={COLORS.textSecondary} style={{ marginBottom: 10 }} />
-            <Text style={{ fontSize: 15, color: COLORS.textSecondary, fontWeight: '500', marginBottom: 2, letterSpacing: 0.2 }}>Entry Time</Text>
-            <Text style={{ fontSize: 18, color: COLORS.text, fontWeight: '700', letterSpacing: 0.3 }}>
+          <View style={{ flex: 1, backgroundColor: COLORS.surface, borderRadius: responsiveBorderRadius.large, paddingVertical: scaleSpacing(24), paddingHorizontal: scaleSpacing(12), alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 }}>
+            <Ionicons name="time-outline" size={32} color={COLORS.textSecondary} style={{ marginBottom: scaleSpacing(10) }} />
+            <Text style={{ fontSize: scaleFontSize(15), color: COLORS.textSecondary, fontWeight: '500', marginBottom: scaleSpacing(2), letterSpacing: 0.2 }}>Entry Time</Text>
+            <Text style={{ fontSize: scaleFontSize(18), color: COLORS.text, fontWeight: '700', letterSpacing: 0.3 }}>
               {profile?.isCheckedIn && profile?.lastEntryTime
                 ? (() => {
                     let dateObj;
@@ -283,14 +302,24 @@ export default function Index() {
             </Text>
           </View>
         </View>
-      </Animated.View>
+        </Animated.View>
+      </ScrollView>
 
       {/* Toast Notification */}
       {showToastState && (
         <Animated.View 
           style={[
             styles.toast,
-            { backgroundColor: getToastColor() }
+            { 
+              backgroundColor: getToastColor(),
+              top: Math.max(insets.top, scaleSpacing(60)),
+              left: responsivePadding.horizontal,
+              right: responsivePadding.horizontal,
+              gap: scaleSpacing(10),
+              paddingHorizontal: responsivePadding.horizontal,
+              paddingVertical: scaleSpacing(16),
+              borderRadius: responsiveBorderRadius.medium,
+            }
           ]}
         >
           <Ionicons 
@@ -298,7 +327,7 @@ export default function Index() {
             size={20} 
             color="#ffffff" 
           />
-          <Text style={styles.toastText}>{toastMsg}</Text>
+          <Text style={[styles.toastText, { fontSize: scaleFontSize(15) }]}>{toastMsg}</Text>
         </Animated.View>
       )}
     </SafeAreaView>
@@ -320,44 +349,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 20,
-    fontSize: 16,
+    marginTop: scaleSpacing(20),
+    fontSize: scaleFontSize(16),
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   header: {
-    marginTop: 20,
-    marginBottom: 40,
+    // marginTop and marginBottom are set inline
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    // marginBottom is set inline
   },
   titleContainer: {
     flex: 1,
   },
   logo: {
-    fontSize: 32,
     fontWeight: '800',
     color: COLORS.text,
     letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 16,
     color: COLORS.textSecondary,
     fontWeight: '500',
-    marginTop: 4,
   },
   logoutButton: {
-    padding: 12,
     backgroundColor: COLORS.surface,
-    borderRadius: 12,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -366,8 +391,6 @@ const styles = StyleSheet.create({
   },
   welcomeContainer: {
     backgroundColor: COLORS.surface,
-    padding: 20,
-    borderRadius: 16,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -375,28 +398,22 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   welcomeText: {
-    fontSize: 16,
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
   userName: {
-    fontSize: 24,
     fontWeight: '700',
     color: COLORS.text,
-    marginTop: 4,
   },
   menuContainer: {
     flex: 1,
-    gap: 20,
   },
   menuCard: {
-    borderRadius: 20,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
-    minHeight: 140,
   },
   membershipCard: {
     backgroundColor: COLORS.cardBackground,
@@ -405,31 +422,24 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
   },
   cardContent: {
-    padding: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 140,
   },
   cardIconContainer: {
-    marginRight: 16,
+    // marginRight is set inline
   },
   cardTextContainer: {
     flex: 1,
   },
   cardTitle: {
-    fontSize: 22,
     fontWeight: '700',
-    marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 14,
     fontWeight: '500',
   },
   cardArrow: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 20,
-    padding: 8,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -462,15 +472,8 @@ const styles = StyleSheet.create({
   },
   toast: {
     position: 'absolute',
-    top: 60,
-    left: 20,
-    right: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -478,7 +481,6 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   toastText: {
-    fontSize: 15,
     color: '#ffffff',
     fontWeight: '600',
     flex: 1,
