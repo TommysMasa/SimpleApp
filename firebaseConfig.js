@@ -1,6 +1,6 @@
 // firebaseConfig.js
-import { getApps, initializeApp } from "firebase/app";
-import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import { getApp, getApps, initializeApp } from "firebase/app";
+import { getAuth, initializeAuth, getReactNativePersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -25,13 +25,18 @@ console.log('Firebase Config Debug:', {
   measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 });
 
-// すでに初期化済みならそれを使う
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+let app;
+let auth;
 
-// AsyncStorageを使った永続化設定でAuthを初期化
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
-});
+if (getApps().length) {
+  app = getApp();
+  auth = getAuth(app);
+} else {
+  app = initializeApp(firebaseConfig);
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage)
+  });
+}
 
 const db = getFirestore(app);
 
