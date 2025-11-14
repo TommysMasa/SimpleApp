@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -53,64 +55,80 @@ export default function Index() {
   const navigation = useNavigation();
 
   useEffect(() => {
-    const check = async () => {
-      if (!loading) {
-        if (!user) {
-          router.replace('/welcome');
-        } else {
-          setCheckingProfile(true);
-          const profileData = await getUserData();
-          if (!profileData) {
-            router.replace({ pathname: '/signup', params: { phone: user?.phoneNumber || '' } });
-          } else {
-            setProfile(profileData);
-            setCheckingProfile(false);
-            
-            Animated.parallel([
-              Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 800,
-                useNativeDriver: true,
-              }),
-              Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 800,
-                easing: Easing.out(Easing.exp),
-                useNativeDriver: true,
-              }),
-            ]).start();
-            
-            Animated.stagger(200, [
-              Animated.spring(scaleAnim1, {
-                toValue: 1,
-                tension: 100,
-                friction: 8,
-                useNativeDriver: true,
-              }),
-              Animated.spring(scaleAnim2, {
-                toValue: 1,
-                tension: 100,
-                friction: 8,
-                useNativeDriver: true,
-              }),
-            ]).start();
-          }
-        }
+    // @react-native-firebase/authの認証状態を監視
+    const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
+      if (!firebaseUser) {
+        router.replace('/welcome');
+        return;
       }
-    };
-    check();
-  }, [user, loading]);
+
+      // 認証済みの場合、Firestoreからユーザーデータを取得
+      setCheckingProfile(true);
+      try {
+        const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
+        const userData = userDoc.data();
+        if (!userData) {
+          // ユーザーデータが存在しない場合、会員登録画面に遷移
+          router.replace({ pathname: '/signup', params: { phone: firebaseUser.phoneNumber || '' } });
+        } else {
+          setProfile(userData);
+          setCheckingProfile(false);
+          
+          Animated.parallel([
+            Animated.timing(fadeAnim, {
+              toValue: 1,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+              toValue: 0,
+              duration: 800,
+              easing: Easing.out(Easing.exp),
+              useNativeDriver: true,
+            }),
+          ]).start();
+          
+          Animated.stagger(200, [
+            Animated.spring(scaleAnim1, {
+              toValue: 1,
+              tension: 100,
+              friction: 8,
+              useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim2, {
+              toValue: 1,
+              tension: 100,
+              friction: 8,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        setCheckingProfile(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', async () => {
-      if (!user) return;
+      const firebaseUser = auth().currentUser;
+      if (!firebaseUser) return;
       setCheckingProfile(true);
-      const profileData = await getUserData();
-      setProfile(profileData);
-      setCheckingProfile(false);
+      try {
+        const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
+        const userData = userDoc.data();
+        setProfile(userData);
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      } finally {
+        setCheckingProfile(false);
+      }
     });
     return unsubscribe;
-  }, [navigation, user]);
+  }, [navigation]);
 
   const handleMembershipPress = () => {
     router.push('/barcode');
@@ -156,6 +174,20 @@ export default function Index() {
     });
   };
 
+  // Hooks must be called before any early returns
+  const responsivePadding = getResponsivePadding();
+  const responsiveMargin = getResponsiveMargin();
+  const responsiveBorderRadius = getResponsiveBorderRadius();
+  const insets = useSafeAreaInsets();
+
+  const getToastColor = () => {
+    switch (toastType) {
+      case 'success': return COLORS.success;
+      case 'error': return COLORS.error;
+      default: return COLORS.primary;
+    }
+  };
+
   if (loading || checkingProfile) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -166,19 +198,6 @@ export default function Index() {
       </SafeAreaView>
     );
   }
-
-  const getToastColor = () => {
-    switch (toastType) {
-      case 'success': return COLORS.success;
-      case 'error': return COLORS.error;
-      default: return COLORS.primary;
-    }
-  };
-
-  const responsivePadding = getResponsivePadding();
-  const responsiveMargin = getResponsiveMargin();
-  const responsiveBorderRadius = getResponsiveBorderRadius();
-  const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaView style={styles.container}>

@@ -8,6 +8,7 @@
     "scheme": "mangalounge",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "jsEngine": "hermes",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mangalounge.app",
@@ -47,10 +48,14 @@
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "static"
+            "useFrameworks": "static",
+            "xcconfig": {
+              "CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES": "YES"
+            }
           },
           "android": {
-            "minSdkVersion": 24
+            "minSdkVersion": 24,
+            "ndkVersion": "27.1.12297006"
           }
         }
       ],

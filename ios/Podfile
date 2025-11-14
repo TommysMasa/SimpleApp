@@ -56,5 +56,19 @@ target 'MangaLounge' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+    
+    # Fix for @react-native-firebase with New Architecture and use_frameworks
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        
+        # Fix for React Native headers with use_frameworks! :linkage => :static
+        if target.name.start_with?('RNFB')
+          config.build_settings['HEADER_SEARCH_PATHS'] ||= ['$(inherited)']
+          config.build_settings['HEADER_SEARCH_PATHS'] << '"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core.framework/Headers"'
+          config.build_settings['HEADER_SEARCH_PATHS'] << '"${PODS_CONFIGURATION_BUILD_DIR}/React-RCTFabric/React_RCTFabric.framework/Headers"' if podfile_properties['newArchEnabled'] == 'true'
+        end
+      end
+    end
   end
 end

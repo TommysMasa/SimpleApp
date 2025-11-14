@@ -4,9 +4,10 @@ import {
     sendPasswordResetEmail,
     signInWithEmailAndPassword
 } from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db } from '../firebaseConfig';
+import { auth as webAuth } from '../firebaseConfig';
 
 interface UserRegistrationData {
   firstName: string;
@@ -61,8 +62,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    // @react-native-firebase/authの認証状態を監視
+    const unsubscribe = auth().onAuthStateChanged((firebaseUser) => {
+      // Firebase Web SDKのUser型に変換（互換性のため）
+      setUser(firebaseUser as any);
       setLoading(false);
     });
 
@@ -71,7 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signUp = async (userData: any) => {
     try {
-      const currentUser = auth.currentUser;
+      const currentUser = auth().currentUser;
       if (!currentUser) {
         throw new Error('No authenticated user');
       }
@@ -84,11 +87,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         dateOfBirth: userData.dateOfBirth,
         gender: userData.gender,
         phone: userData.phone,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: firestore.FieldValue.serverTimestamp(),
+        updatedAt: firestore.FieldValue.serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'users', currentUser.uid), userDoc);
+      // @react-native-firebase/firestoreを使用
+      await firestore().collection('users').doc(currentUser.uid).set(userDoc);
     } catch (error) {
       // エラーログを削除（セキュリティ上の理由）
       throw error;
@@ -97,7 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(webAuth, email, password);
     } catch (error) {
       throw error;
     }
@@ -105,7 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      await auth.signOut();
+      await auth().signOut();
     } catch (error) {
       // エラーログを削除（セキュリティ上の理由）
       throw error;
@@ -114,38 +118,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string) => {
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(webAuth, email);
     } catch (error) {
       throw error;
     }
   };
 
   const getUserData = async (): Promise<UserData | null> => {
-    if (!user) {
+    // @react-native-firebase/authの現在のユーザーを直接取得
+    const firebaseUser = auth().currentUser;
+    if (!firebaseUser) {
       return null;
     }
 
     try {
-      const docRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        return docSnap.data() as UserData;
+      // @react-native-firebase/firestoreを使用
+      const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
+      const userData = userDoc.data();
+      
+      if (userData) {
+        return userData as UserData;
       } else {
         return null;
       }
     } catch (error) {
-      // エラーログを削除（セキュリティ上の理由）
+      console.error('Error getting user data:', error);
       return null;
     }
   };
 
   const updateUserData = async (updates: Partial<UserData>) => {
-    if (!user) throw new Error('No user logged in');
+    const firebaseUser = auth().currentUser;
+    if (!firebaseUser) throw new Error('No user logged in');
     
-    // uidをドキュメントIDとして直接使用
-    const userRef = doc(db, 'users', user.uid);
-    await updateDoc(userRef, {
+    // @react-native-firebase/firestoreを使用
+    await firestore().collection('users').doc(firebaseUser.uid).update({
       ...updates,
       updatedAt: new Date().toISOString(),
     });

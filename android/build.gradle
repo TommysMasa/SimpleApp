@@ -21,19 +21,5 @@ allprojects {
   }
 }
 
-// Set minSdkVersion before plugins are applied
-ext {
-  minSdkVersion = 24
-  compileSdkVersion = 36
-  targetSdkVersion = 36
-}
-
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
-
-// Override again after plugins to ensure it's 24
-ext {
-  minSdkVersion = 24
-  compileSdkVersion = 36
-  targetSdkVersion = 36
-}

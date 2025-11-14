@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { getAuth, PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import React, { useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
-import app from '../firebaseConfig';
 import LoadingScreen from './LoadingScreen';
 import { scaleFontSize, scaleSpacing, getResponsivePadding, getResponsiveMargin, getResponsiveBorderRadius } from '../utils/responsive';
 
@@ -14,12 +14,10 @@ export default function SMSVerification() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const auth = getAuth(app);
   const verificationId = params.verificationId as string;
   const phoneNumber = params.phoneNumber as string;
   const inputRef = useRef<TextInput>(null);
   const [countdown, setCountdown] = useState(24);
-  const { getUserData, user } = useAuth();
   const [showLoading, setShowLoading] = useState(false);
   const [pendingCheck, setPendingCheck] = useState(false);
 
@@ -29,6 +27,36 @@ export default function SMSVerification() {
       return () => clearTimeout(timer);
     }
   }, [countdown]);
+
+  // 認証成功後、認証状態が更新されたらユーザーデータをチェック
+  React.useEffect(() => {
+    if (pendingCheck) {
+      const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
+        if (firebaseUser) {
+          const cleanedPhone = phoneNumber.replace(/\s/g, '');
+          try {
+            const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
+            const userData = userDoc.data();
+            setShowLoading(false);
+            setPendingCheck(false);
+            if (userData) {
+              // 既存ユーザー: ホーム画面に遷移
+              router.replace('/');
+            } else {
+              // 新規ユーザー: 会員登録画面に遷移
+              router.replace({ pathname: '/signup', params: { phone: cleanedPhone } } as any);
+            }
+          } catch (error) {
+            console.error('Error getting user data:', error);
+            setShowLoading(false);
+            setPendingCheck(false);
+            setMessage('Error loading user data. Please try again.');
+          }
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [pendingCheck, phoneNumber]);
 
   const showAlert = (title: string, message: string) => {
     if (Platform.OS === 'web') {
@@ -60,11 +88,14 @@ export default function SMSVerification() {
     setLoading(true);
     setMessage('');
     try {
-      const credential = PhoneAuthProvider.credential(verificationId, codeToVerify);
-      await signInWithCredential(auth, credential);
+      const credential = auth.PhoneAuthProvider.credential(verificationId, codeToVerify);
+      await auth().signInWithCredential(credential);
+      // @react-native-firebase/authでサインイン成功
+      // 認証状態の更新を待つため、pendingCheckを設定
       setShowLoading(true);
       setPendingCheck(true);
     } catch (err: any) {
+      console.error('SMS verification error:', err);
       // Firebase error code for invalid verification code is 'auth/invalid-verification-code'
       let friendlyMessage = '';
       if (err.code === 'auth/invalid-verification-code' || (err.message && err.message.toLowerCase().includes('invalid verification code'))) {
@@ -72,29 +103,15 @@ export default function SMSVerification() {
       } else if (err.code === 'auth/code-expired') {
         friendlyMessage = 'This verification code has expired. Please request a new one.';
       } else {
-        friendlyMessage = 'An error occurred during verification. Please try again.';
+        friendlyMessage = err.message || 'An error occurred during verification. Please try again.';
       }
       setMessage(friendlyMessage);
+      setShowLoading(false);
     } finally {
       setLoading(false);
     }
   };
 
-  React.useEffect(() => {
-    if (pendingCheck && user) {
-      (async () => {
-        const cleanedPhone = phoneNumber.replace(/\s/g, ''); // keep '+' and digits
-        const userData = await getUserData();
-        setShowLoading(false);
-        setPendingCheck(false);
-        if (userData) {
-          router.replace('/');
-        } else {
-          router.replace({ pathname: '/signup', params: { phone: cleanedPhone } } as any);
-        }
-      })();
-    }
-  }, [pendingCheck, user]);
 
   if (showLoading) {
     return <LoadingScreen />;

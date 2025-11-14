@@ -1,11 +1,8 @@
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { router } from 'expo-router';
-import { getAuth, signInWithPhoneNumber } from 'firebase/auth';
 import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Linking,
-  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -21,7 +18,7 @@ import { Country, CountryPicker } from '../components/CountryPicker';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast, { ToastType } from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
-import { app, auth } from '../firebaseConfig';
+import auth from '@react-native-firebase/auth';
 import { accessibilityHelpers } from '../utils/accessibility';
 import { scaleFontSize, scaleSpacing, getResponsivePadding, getResponsiveMargin, getResponsiveBorderRadius, getResponsiveInputHeight, getResponsiveButtonHeight } from '../utils/responsive';
 
@@ -38,16 +35,14 @@ export default function PhoneAuth() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<ToastType>('info');
   const [error, setError] = useState('');
-  const [showRecaptchaIntro, setShowRecaptchaIntro] = useState(false);
   const inputRef = useRef<TextInput>(null);
-  const recaptchaVerifier = useRef<FirebaseRecaptchaVerifierModal | null>(null);
 
   const validatePhoneNumber = (phone: string) => {
     const cleaned = phone.replace(/\D/g, '');
     return cleaned.length === 10;
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!phoneNumber) {
       setError('Please enter your phone number.');
       return;
@@ -56,21 +51,13 @@ export default function PhoneAuth() {
       setError('Invalid phone number. Enter 10 digits.');
       return;
     }
-    setShowRecaptchaIntro(true);
-  };
-
-  const handleStartRecaptcha = async () => {
-    setShowRecaptchaIntro(false);
+    
     setLoading(true);
     setError('');
     try {
       const cleaned = phoneNumber.replace(/\D/g, '');
       const fullPhoneNumber = `${selectedCountry.dialCode}${cleaned}`;
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        fullPhoneNumber,
-        recaptchaVerifier.current as unknown as import('firebase/auth').ApplicationVerifier
-      );
+      const confirmation = await auth().signInWithPhoneNumber(fullPhoneNumber);
       setToastMessage('Verification code sent!');
       setToastType('success');
       setToastVisible(true);
@@ -94,32 +81,6 @@ export default function PhoneAuth() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      {/* Custom reCAPTCHA intro modal */}
-      <Modal
-        visible={showRecaptchaIntro}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setShowRecaptchaIntro(false)}
-      >
-        <View style={styles.recaptchaModalBg}>
-          <View style={[styles.recaptchaCard, { width: '88%', borderRadius: responsiveBorderRadius.large, padding: scaleSpacing(28) }]}>
-            <Text style={[styles.recaptchaTitle, { fontSize: scaleFontSize(22), marginBottom: scaleSpacing(12) }]}>Protecting your account</Text>
-            <Text style={[styles.recaptchaSubtitle, { fontSize: scaleFontSize(16), marginBottom: scaleSpacing(28) }]}>Please solve this puzzle so we know you are a real person</Text>
-            <TouchableOpacity style={[styles.recaptchaStartBtn, { borderRadius: responsiveBorderRadius.small, paddingVertical: scaleSpacing(14), paddingHorizontal: scaleSpacing(32), marginBottom: scaleSpacing(12) }]} onPress={handleStartRecaptcha}>
-              <Text style={[styles.recaptchaStartBtnText, { fontSize: scaleFontSize(16) }]}>Start Verification</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.recaptchaCancelBtn, { paddingVertical: scaleSpacing(8), paddingHorizontal: scaleSpacing(16) }]} onPress={() => setShowRecaptchaIntro(false)}>
-              <Text style={[styles.recaptchaCancelBtnText, { fontSize: scaleFontSize(15) }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-      {/* reCAPTCHA modal (always mounted, only used when needed) */}
-      <FirebaseRecaptchaVerifierModal
-        ref={recaptchaVerifier}
-        firebaseConfig={app.options}
-        attemptInvisibleVerification={false}
-      />
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -293,56 +254,5 @@ const styles = StyleSheet.create({
   continueButtonText: {
     color: '#fff',
     fontWeight: '600',
-  },
-  recaptchaModalBg: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.18)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recaptchaCard: {
-    width: '88%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 28,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  recaptchaTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#222',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  recaptchaSubtitle: {
-    fontSize: 16,
-    color: '#444',
-    textAlign: 'center',
-    marginBottom: 28,
-  },
-  recaptchaStartBtn: {
-    backgroundColor: '#222',
-    borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    marginBottom: 12,
-  },
-  recaptchaStartBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  recaptchaCancelBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  recaptchaCancelBtnText: {
-    color: '#888',
-    fontSize: 15,
   },
 }); 
