@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+// Platform-specific Firebase imports
+import { auth, firestore } from '../firebase';
+import { auth as webAuth, db as webFirestore } from '../firebaseConfig';
+import { PhoneAuthProvider, signInWithCredential, onAuthStateChanged as webOnAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import React, { useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,30 +34,63 @@ export default function SMSVerification() {
   // 認証成功後、認証状態が更新されたらユーザーデータをチェック
   React.useEffect(() => {
     if (pendingCheck) {
-      const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
-        if (firebaseUser) {
-          const cleanedPhone = phoneNumber.replace(/\s/g, '');
-          try {
-            const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
-            const userData = userDoc.data();
-            setShowLoading(false);
-            setPendingCheck(false);
-            if (userData) {
-              // 既存ユーザー: ホーム画面に遷移
-              router.replace('/');
-            } else {
-              // 新規ユーザー: 会員登録画面に遷移
-              router.replace({ pathname: '/signup', params: { phone: cleanedPhone } } as any);
+      let unsubscribe: (() => void) | undefined;
+
+      if (Platform.OS === 'ios') {
+        // iOS: Firebase Web SDK
+        unsubscribe = webOnAuthStateChanged(webAuth, async (firebaseUser) => {
+          if (firebaseUser) {
+            const cleanedPhone = phoneNumber.replace(/\s/g, '');
+            try {
+              const userDoc = await getDoc(doc(webFirestore, 'users', firebaseUser.uid));
+              const userData = userDoc.data();
+              setShowLoading(false);
+              setPendingCheck(false);
+              if (userData) {
+                // 既存ユーザー: ホーム画面に遷移
+                router.replace('/');
+              } else {
+                // 新規ユーザー: 会員登録画面に遷移
+                router.replace({ pathname: '/signup', params: { phone: cleanedPhone } } as any);
+              }
+            } catch (error) {
+              console.error('Error getting user data:', error);
+              setShowLoading(false);
+              setPendingCheck(false);
+              setMessage('Error loading user data. Please try again.');
             }
-          } catch (error) {
-            console.error('Error getting user data:', error);
-            setShowLoading(false);
-            setPendingCheck(false);
-            setMessage('Error loading user data. Please try again.');
           }
-        }
-      });
-      return () => unsubscribe();
+        });
+      } else {
+        // Android: @react-native-firebase
+        unsubscribe = auth().onAuthStateChanged(async (firebaseUser: any) => {
+          if (firebaseUser) {
+            const cleanedPhone = phoneNumber.replace(/\s/g, '');
+            try {
+              const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
+              const userData = userDoc.data();
+              setShowLoading(false);
+              setPendingCheck(false);
+              if (userData) {
+                // 既存ユーザー: ホーム画面に遷移
+                router.replace('/');
+              } else {
+                // 新規ユーザー: 会員登録画面に遷移
+                router.replace({ pathname: '/signup', params: { phone: cleanedPhone } } as any);
+              }
+            } catch (error) {
+              console.error('Error getting user data:', error);
+              setShowLoading(false);
+              setPendingCheck(false);
+              setMessage('Error loading user data. Please try again.');
+            }
+          }
+        });
+      }
+
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
     }
   }, [pendingCheck, phoneNumber]);
 
@@ -88,9 +124,16 @@ export default function SMSVerification() {
     setLoading(true);
     setMessage('');
     try {
-      const credential = auth.PhoneAuthProvider.credential(verificationId, codeToVerify);
-      await auth().signInWithCredential(credential);
-      // @react-native-firebase/authでサインイン成功
+      if (Platform.OS === 'ios') {
+        // iOS: Firebase Web SDK
+        const credential = PhoneAuthProvider.credential(verificationId, codeToVerify);
+        await signInWithCredential(webAuth, credential);
+      } else {
+        // Android: @react-native-firebase
+        const credential = auth.PhoneAuthProvider.credential(verificationId, codeToVerify);
+        await auth().signInWithCredential(credential);
+      }
+      
       // 認証状態の更新を待つため、pendingCheckを設定
       setShowLoading(true);
       setPendingCheck(true);

@@ -1,0 +1,19 @@
+{
+  "event": {
+    "token": "TOKEN",
+    "expectedAction": "USER_ACTION",
+    "siteKey": "6Le8KA0sAAAAAJx-7m6uzI0LEkrExnWT5xmz62ZU"
+  }
+}
+
+注意:
+- TOKEN: grecaptcha.enterprise.execute() 呼び出しから返されたトークン
+- USER_ACTION: 省略可。grecaptcha.enterprise.execute() 呼び出しで指定されたユーザー開始アクション（例: "LOGIN"）
+- siteKey: reCAPTCHA Enterpriseサイトキー
+
+APIリクエストURL:
+https://recaptchaenterprise.googleapis.com/v1/projects/simpleapp-5c1c6/assessments?key=API_KEY
+
+注意:
+- API_KEY: 現在のプロジェクトに関連付けられているAPIキー（EXPO_PUBLIC_FIREBASE_API_KEYの値）
+

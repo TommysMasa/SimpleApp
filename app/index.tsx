@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+// Platform-specific Firebase imports
+import { auth, firestore } from '../firebase';
+import { auth as webAuth, db as webFirestore } from '../firebaseConfig';
+import { onAuthStateChanged as webOnAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -55,71 +58,150 @@ export default function Index() {
   const navigation = useNavigation();
 
   useEffect(() => {
-    // @react-native-firebase/authの認証状態を監視
-    const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
-      if (!firebaseUser) {
-        router.replace('/welcome');
-        return;
-      }
+    // Platform-specific auth state monitoring
+    let unsubscribe: (() => void) | undefined;
 
-      // 認証済みの場合、Firestoreからユーザーデータを取得
-      setCheckingProfile(true);
-      try {
-        const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
-        const userData = userDoc.data();
-        if (!userData) {
-          // ユーザーデータが存在しない場合、会員登録画面に遷移
-          router.replace({ pathname: '/signup', params: { phone: firebaseUser.phoneNumber || '' } });
-        } else {
-          setProfile(userData);
-          setCheckingProfile(false);
-          
-          Animated.parallel([
-            Animated.timing(fadeAnim, {
-              toValue: 1,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(slideAnim, {
-              toValue: 0,
-              duration: 800,
-              easing: Easing.out(Easing.exp),
-              useNativeDriver: true,
-            }),
-          ]).start();
-          
-          Animated.stagger(200, [
-            Animated.spring(scaleAnim1, {
-              toValue: 1,
-              tension: 100,
-              friction: 8,
-              useNativeDriver: true,
-            }),
-            Animated.spring(scaleAnim2, {
-              toValue: 1,
-              tension: 100,
-              friction: 8,
-              useNativeDriver: true,
-            }),
-          ]).start();
+    if (Platform.OS === 'ios') {
+      // iOS: Firebase Web SDK
+      unsubscribe = webOnAuthStateChanged(webAuth, async (firebaseUser) => {
+        if (!firebaseUser) {
+          router.replace('/welcome');
+          return;
         }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-        setCheckingProfile(false);
-      }
-    });
 
-    return () => unsubscribe();
+        // 認証済みの場合、Firestoreからユーザーデータを取得
+        setCheckingProfile(true);
+        try {
+          const userDoc = await getDoc(doc(webFirestore, 'users', firebaseUser.uid));
+          const userData = userDoc.data();
+          if (!userData) {
+            // ユーザーデータが存在しない場合、会員登録画面に遷移
+            router.replace({ pathname: '/signup', params: { phone: firebaseUser.phoneNumber || '' } });
+          } else {
+            setProfile(userData);
+            setCheckingProfile(false);
+            
+            Animated.parallel([
+              Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+              }),
+              Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 800,
+                easing: Easing.out(Easing.exp),
+                useNativeDriver: true,
+              }),
+            ]).start();
+            
+            Animated.stagger(200, [
+              Animated.spring(scaleAnim1, {
+                toValue: 1,
+                tension: 100,
+                friction: 8,
+                useNativeDriver: true,
+              }),
+              Animated.spring(scaleAnim2, {
+                toValue: 1,
+                tension: 100,
+                friction: 8,
+                useNativeDriver: true,
+              }),
+            ]).start();
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          setCheckingProfile(false);
+        }
+      });
+    } else {
+      // Android: @react-native-firebase
+      unsubscribe = auth().onAuthStateChanged(async (firebaseUser: any) => {
+        if (!firebaseUser) {
+          router.replace('/welcome');
+          return;
+        }
+
+        // 認証済みの場合、Firestoreからユーザーデータを取得
+        setCheckingProfile(true);
+        try {
+          const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
+          const userData = userDoc.data();
+          if (!userData) {
+            // ユーザーデータが存在しない場合、会員登録画面に遷移
+            router.replace({ pathname: '/signup', params: { phone: firebaseUser.phoneNumber || '' } });
+          } else {
+            setProfile(userData);
+            setCheckingProfile(false);
+            
+            Animated.parallel([
+              Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+              }),
+              Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 800,
+                easing: Easing.out(Easing.exp),
+                useNativeDriver: true,
+              }),
+            ]).start();
+            
+            Animated.stagger(200, [
+              Animated.spring(scaleAnim1, {
+                toValue: 1,
+                tension: 100,
+                friction: 8,
+                useNativeDriver: true,
+              }),
+              Animated.spring(scaleAnim2, {
+                toValue: 1,
+                tension: 100,
+                friction: 8,
+                useNativeDriver: true,
+              }),
+            ]).start();
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          setCheckingProfile(false);
+        }
+      });
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', async () => {
-      const firebaseUser = auth().currentUser;
+      // Platform-specific user retrieval
+      let firebaseUser: any;
+      if (Platform.OS === 'ios') {
+        // iOS: Firebase Web SDK
+        firebaseUser = webAuth.currentUser;
+      } else {
+        // Android: @react-native-firebase
+        firebaseUser = auth().currentUser;
+      }
+      
       if (!firebaseUser) return;
       setCheckingProfile(true);
       try {
-        const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
-        const userData = userDoc.data();
+        // Platform-specific Firestore operations
+        let userData: any;
+        if (Platform.OS === 'ios') {
+          // iOS: Firebase Web SDK
+          const userDoc = await getDoc(doc(webFirestore, 'users', firebaseUser.uid));
+          userData = userDoc.data();
+        } else {
+          // Android: @react-native-firebase
+          const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
+          userData = userDoc.data();
+        }
         setProfile(userData);
       } catch (error) {
         console.error('Error loading user data:', error);

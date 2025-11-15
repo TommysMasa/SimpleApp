@@ -1,13 +1,16 @@
 import {
     User,
-    onAuthStateChanged,
+    onAuthStateChanged as webOnAuthStateChanged,
     sendPasswordResetEmail,
     signInWithEmailAndPassword
 } from 'firebase/auth';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { Platform } from 'react-native';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth as webAuth } from '../firebaseConfig';
+// Platform-specific Firebase imports via firebase.ts
+import { auth, firestore } from '../firebase';
+// Firebase Web SDK imports for iOS-specific operations
+import { auth as webAuth, db as webFirestore } from '../firebaseConfig';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 interface UserRegistrationData {
   firstName: string;
@@ -62,19 +65,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // @react-native-firebase/authの認証状態を監視
-    const unsubscribe = auth().onAuthStateChanged((firebaseUser) => {
-      // Firebase Web SDKのUser型に変換（互換性のため）
-      setUser(firebaseUser as any);
-      setLoading(false);
-    });
+    // Platform-specific auth state monitoring
+    let unsubscribe: (() => void) | undefined;
 
-    return () => unsubscribe();
+    if (Platform.OS === 'ios') {
+      // iOS: Firebase Web SDK
+      unsubscribe = webOnAuthStateChanged(webAuth, (firebaseUser) => {
+        setUser(firebaseUser);
+        setLoading(false);
+      });
+    } else {
+      // Android: @react-native-firebase
+      unsubscribe = auth().onAuthStateChanged((firebaseUser: any) => {
+        // Convert to Firebase Web SDK User type for compatibility
+        setUser(firebaseUser as any);
+        setLoading(false);
+      });
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const signUp = async (userData: any) => {
     try {
-      const currentUser = auth().currentUser;
+      let currentUser: any;
+      if (Platform.OS === 'ios') {
+        // iOS: Firebase Web SDK
+        currentUser = webAuth.currentUser;
+      } else {
+        // Android: @react-native-firebase
+        currentUser = auth().currentUser;
+      }
+
       if (!currentUser) {
         throw new Error('No authenticated user');
       }
@@ -87,12 +111,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         dateOfBirth: userData.dateOfBirth,
         gender: userData.gender,
         phone: userData.phone,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+        createdAt: Platform.OS === 'ios' ? serverTimestamp() : firestore.FieldValue.serverTimestamp(),
+        updatedAt: Platform.OS === 'ios' ? serverTimestamp() : firestore.FieldValue.serverTimestamp(),
       };
 
-      // @react-native-firebase/firestoreを使用
-      await firestore().collection('users').doc(currentUser.uid).set(userDoc);
+      // Platform-specific Firestore operations
+      if (Platform.OS === 'ios') {
+        // iOS: Firebase Web SDK
+        await setDoc(doc(webFirestore, 'users', currentUser.uid), userDoc);
+      } else {
+        // Android: @react-native-firebase
+        await firestore().collection('users').doc(currentUser.uid).set(userDoc);
+      }
     } catch (error) {
       // エラーログを削除（セキュリティ上の理由）
       throw error;
@@ -109,7 +139,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      await auth().signOut();
+      if (Platform.OS === 'ios') {
+        // iOS: Firebase Web SDK
+        await webAuth.signOut();
+      } else {
+        // Android: @react-native-firebase
+        await auth().signOut();
+      }
     } catch (error) {
       // エラーログを削除（セキュリティ上の理由）
       throw error;
@@ -125,16 +161,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const getUserData = async (): Promise<UserData | null> => {
-    // @react-native-firebase/authの現在のユーザーを直接取得
-    const firebaseUser = auth().currentUser;
+    // Platform-specific user retrieval
+    let firebaseUser: any;
+    if (Platform.OS === 'ios') {
+      // iOS: Firebase Web SDK
+      firebaseUser = webAuth.currentUser;
+    } else {
+      // Android: @react-native-firebase
+      firebaseUser = auth().currentUser;
+    }
+
     if (!firebaseUser) {
       return null;
     }
 
     try {
-      // @react-native-firebase/firestoreを使用
-      const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
-      const userData = userDoc.data();
+      // Platform-specific Firestore operations
+      let userData: any;
+      if (Platform.OS === 'ios') {
+        // iOS: Firebase Web SDK
+        const userDoc = await getDoc(doc(webFirestore, 'users', firebaseUser.uid));
+        userData = userDoc.data();
+      } else {
+        // Android: @react-native-firebase
+        const userDoc = await firestore().collection('users').doc(firebaseUser.uid).get();
+        userData = userDoc.data();
+      }
       
       if (userData) {
         return userData as UserData;
@@ -148,14 +200,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const updateUserData = async (updates: Partial<UserData>) => {
-    const firebaseUser = auth().currentUser;
+    // Platform-specific user retrieval
+    let firebaseUser: any;
+    if (Platform.OS === 'ios') {
+      // iOS: Firebase Web SDK
+      firebaseUser = webAuth.currentUser;
+    } else {
+      // Android: @react-native-firebase
+      firebaseUser = auth().currentUser;
+    }
+
     if (!firebaseUser) throw new Error('No user logged in');
     
-    // @react-native-firebase/firestoreを使用
-    await firestore().collection('users').doc(firebaseUser.uid).update({
+    // Platform-specific Firestore operations
+    const updateData = {
       ...updates,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    if (Platform.OS === 'ios') {
+      // iOS: Firebase Web SDK
+      await updateDoc(doc(webFirestore, 'users', firebaseUser.uid), updateData);
+    } else {
+      // Android: @react-native-firebase
+      await firestore().collection('users').doc(firebaseUser.uid).update(updateData);
+    }
   };
 
   const value: AuthContextType = {

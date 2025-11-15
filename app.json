@@ -12,7 +12,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mangalounge.app",
-      "buildNumber": "24",
+      "buildNumber": "29",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -25,7 +25,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.mangalounge.app",
-      "versionCode": 24,
+      "versionCode": 29,
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -58,8 +58,7 @@
             "ndkVersion": "27.1.12297006"
           }
         }
-      ],
-      "@react-native-firebase/app"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
