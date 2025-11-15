@@ -2,18 +2,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    Easing,
-    Platform,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Easing,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -62,7 +62,7 @@ export default function Index() {
           } else {
             setProfile(profileData);
             setCheckingProfile(false);
-            // 画面表示アニメーション開始
+            
             Animated.parallel([
               Animated.timing(fadeAnim, {
                 toValue: 1,
@@ -77,7 +77,6 @@ export default function Index() {
               }),
             ]).start();
             
-            // カードのスケールアニメーション
             Animated.stagger(200, [
               Animated.spring(scaleAnim1, {
                 toValue: 1,

@@ -1,24 +1,15 @@
 import React from 'react';
-import { Keyboard, Pressable } from 'react-native';
+import { Keyboard, TouchableWithoutFeedback } from 'react-native';
 
 interface DismissKeyboardProps {
   children: React.ReactNode;
-  style?: any;
 }
 
-const DismissKeyboard: React.FC<DismissKeyboardProps> = ({ children, style }) => {
-  const dismissKeyboard = () => {
-    console.log('DismissKeyboard: Tapped, dismissing keyboard');
-    Keyboard.dismiss();
-  };
-
+const DismissKeyboard: React.FC<DismissKeyboardProps> = ({ children }) => {
   return (
-    <Pressable 
-      onPress={dismissKeyboard}
-      style={[{ flex: 1 }, style]}
-    >
+    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       {children}
-    </Pressable>
+    </TouchableWithoutFeedback>
   );
 };
 

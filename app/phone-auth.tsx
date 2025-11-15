@@ -20,7 +20,7 @@ import { Country, CountryPicker } from '../components/CountryPicker';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast, { ToastType } from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
-import app from '../firebaseConfig';
+import { app, auth } from '../firebaseConfig';
 import { accessibilityHelpers } from '../utils/accessibility';
 
 export default function PhoneAuth() {
@@ -36,36 +36,14 @@ export default function PhoneAuth() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<ToastType>('info');
   const [error, setError] = useState('');
+  const [showRecaptchaIntro, setShowRecaptchaIntro] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const recaptchaVerifier = useRef<FirebaseRecaptchaVerifierModal | null>(null);
-  const auth = getAuth(app);
-  const { sendPhoneVerification } = useAuth();
-  const [showRecaptchaIntro, setShowRecaptchaIntro] = useState(false);
-  const [slot1, setSlot1] = useState('');
-  const [slot2, setSlot2] = useState('');
-  const [slot3, setSlot3] = useState('');
-  const slot1Ref = useRef<TextInput>(null);
-  const slot2Ref = useRef<TextInput>(null);
-  const slot3Ref = useRef<TextInput>(null);
 
-  // バリデーションも10桁のみ
   const validatePhoneNumber = (phone: string) => {
     const cleaned = phone.replace(/\D/g, '');
     return cleaned.length === 10;
   };
-
-  // 入力時のフォーマット（JPのみ使用）
-  const formatPhoneNumber = (text: string) => {
-    const cleaned = text.replace(/\D/g, '');
-    if (selectedCountry.code === 'JP') {
-      if (cleaned.length <= 3) return cleaned;
-      if (cleaned.length <= 7) return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
-      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`;
-    }
-    return cleaned;
-  };
-
-  // 日本の番号用: onChangeTextは不要なので削除
 
   const handleContinue = () => {
     if (!phoneNumber) {
@@ -77,16 +55,13 @@ export default function PhoneAuth() {
       return;
     }
     setShowRecaptchaIntro(true);
-    // Keyboard.dismiss()やdismissKeyboard()は呼ばない
   };
 
-  // reCAPTCHAとSMS送信を実行
   const handleStartRecaptcha = async () => {
     setShowRecaptchaIntro(false);
     setLoading(true);
     setError('');
     try {
-      // どの国でも「国番号＋数字だけの電話番号」で送信
       const cleaned = phoneNumber.replace(/\D/g, '');
       const fullPhoneNumber = `${selectedCountry.dialCode}${cleaned}`;
       const confirmation = await signInWithPhoneNumber(

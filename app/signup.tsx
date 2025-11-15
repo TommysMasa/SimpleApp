@@ -10,6 +10,7 @@ import {
     findNodeHandle,
     Keyboard,
     KeyboardAvoidingView,
+    Modal,
     Platform,
     ScrollView as RNScrollView,
     TextInput as RNTextInput,
@@ -20,6 +21,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     UIManager,
     View
 } from 'react-native';
@@ -58,19 +60,15 @@ export default function SignUp() {
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
-  const [checkingProfile, setCheckingProfile] = useState(true);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(30));
 
-  const { user, signUp, getUserData } = useAuth();
+  const { signUp } = useAuth();
 
   const genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
-  
-  // Year options (1900 to current year)
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: currentYear - 1900 + 1 }, (_, i) => (currentYear - i).toString());
   
-  // Month options
   const monthOptions = [
     { value: '01', label: 'January' },
     { value: '02', label: 'February' },
@@ -86,11 +84,9 @@ export default function SignUp() {
     { value: '12', label: 'December' },
   ];
   
-  // 日のオプション（選択された年月に応じて動的に生成）
   const getDaysInMonth = (year: string, month: string) => {
     if (!year || !month) return 31;
-    const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
-    return daysInMonth;
+    return new Date(parseInt(year), parseInt(month), 0).getDate();
   };
   
   const dayOptions = Array.from({ length: getDaysInMonth(birthYear, birthMonth) }, (_, i) => 
@@ -107,7 +103,6 @@ export default function SignUp() {
   const emailRef = useRef<RNTextInput>(null);
 
   useEffect(() => {
-    // アニメーション開始
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -124,7 +119,6 @@ export default function SignUp() {
   }, []);
 
   useEffect(() => {
-    // 月が変更されたときに日をリセット
     if (birthYear && birthMonth && birthDay) {
       const maxDays = getDaysInMonth(birthYear, birthMonth);
       if (parseInt(birthDay) > maxDays) {
@@ -141,6 +135,20 @@ export default function SignUp() {
     }
   };
 
+  // Measure and show gender dropdown in a Modal to avoid z-index/ScrollView clipping issues
+  const [genderMenuRect, setGenderMenuRect] = useState<{ x: number; y: number; width: number; height: number }>({ x: 0, y: 0, width: 0, height: 0 });
+  const openGenderMenu = () => {
+    const handle = findNodeHandle(genderRef.current);
+    if (!handle) {
+      setShowGenderPicker(true);
+      return;
+    }
+    UIManager.measureInWindow(handle, (x, y, width, height) => {
+      setGenderMenuRect({ x, y, width, height });
+      setShowGenderPicker(true);
+    });
+  };
+
   const formatDateOfBirth = () => {
     if (birthYear && birthMonth && birthDay) {
       return `${birthMonth}/${birthDay}/${birthYear}`;
@@ -148,22 +156,58 @@ export default function SignUp() {
     return '';
   };
 
-  const validateAge = (year: string, month: string, day: string) => {
-    const birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    const today = new Date();
+  const validateEmail = (emailString: string) => {
+    if (!emailString) return false;
     
-    // 日付の差分を直接計算
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailString)) return false;
+    
+    const [localPart, domain] = emailString.split('@');
+    
+    if (localPart.length === 0 || localPart.length > 64) return false;
+    if (domain.length === 0 || domain.length > 253) return false;
+    if (!domain.includes('.')) return false;
+    if (domain.endsWith('.')) return false;
+    
+    return true;
+  };
+
+  const validateAge = (year: string, month: string, day: string) => {
+    const yearNum = parseInt(year);
+    const monthNum = parseInt(month);
+    const dayNum = parseInt(day);
+    
+    if (monthNum < 1 || monthNum > 12) {
+      showAlert('Invalid Date', 'Please enter a valid month (1-12)');
+      return -1;
+    }
+
+    if (yearNum < 1900 || yearNum > new Date().getFullYear()) {
+      showAlert('Invalid Date', 'Please enter a valid year');
+      return -1;
+    }
+
+    const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+    if (dayNum < 1 || dayNum > daysInMonth) {
+      showAlert('Invalid Date', `Please enter a valid day (1-${daysInMonth} for ${monthNum}/${yearNum})`);
+      return -1;
+    }
+
+    const birthDate = new Date(yearNum, monthNum - 1, dayNum);
+    if (birthDate.getFullYear() !== yearNum || birthDate.getMonth() !== monthNum - 1 || birthDate.getDate() !== dayNum) {
+      showAlert('Invalid Date', 'Please enter a valid date');
+      return -1;
+    }
+
+    const today = new Date();
+    if (birthDate > today) {
+      showAlert('Invalid Date', 'Date of birth cannot be in the future');
+      return -1;
+    }
+    
     const daysDiff = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 3600 * 24));
     const yearsDiff = daysDiff / 365.25;
     const age = Math.floor(yearsDiff);
-    
-    console.log('Age validation:', {
-      birthDate: birthDate.toISOString(),
-      today: today.toISOString(),
-      daysDiff,
-      yearsDiff,
-      calculatedAge: age
-    });
     
     return age;
   };
@@ -183,8 +227,13 @@ export default function SignUp() {
       return;
     }
 
-    // 13歳未満チェック
+    if (!validateEmail(email)) {
+      showAlert('Error', 'Please enter a valid email address');
+      return;
+    }
+
     const age = validateAge(birthYear, birthMonth, birthDay);
+    if (age === -1) return;
     if (age < 13) {
       showAlert('Age Restriction', 'You must be at least 13 years old to use this app');
       return;
@@ -200,7 +249,6 @@ export default function SignUp() {
     try {
       await signUp(userData);
       router.replace('/');
-      
     } catch (error) {
       const authError = error as any;
       let errorMessage = 'Account creation failed';
@@ -241,7 +289,6 @@ export default function SignUp() {
     setShowDayPicker(false);
   };
 
-  // スクロールして中央に持ってくる関数（TouchableOpacityにも対応）
   const scrollToInput = (ref: React.RefObject<any>) => {
     if (ref.current && scrollViewRef.current) {
       const inputHandle = findNodeHandle(ref.current);
@@ -262,6 +309,7 @@ export default function SignUp() {
   };
 
   return (
+    <>
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <KeyboardAvoidingView
@@ -297,6 +345,7 @@ export default function SignUp() {
           <ScrollView
             ref={scrollViewRef}
             style={styles.scrollView}
+            contentContainerStyle={styles.scrollViewContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="never"
             keyboardDismissMode="on-drag"
@@ -462,7 +511,7 @@ export default function SignUp() {
                   <TouchableOpacity 
                     ref={genderRef}
                     style={styles.selectInput}
-                    onPress={() => setShowGenderPicker(!showGenderPicker)}
+                    onPress={openGenderMenu}
                   >
                     <Text style={[styles.selectText, !gender && styles.placeholderText]}>
                       {gender || 'Select gender'}
@@ -470,19 +519,7 @@ export default function SignUp() {
                     <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
                   </TouchableOpacity>
                   
-                  {showGenderPicker && (
-                    <View style={styles.dropdown}>
-                      {genderOptions.map((option) => (
-                        <TouchableOpacity
-                          key={option}
-                          style={styles.dropdownItem}
-                          onPress={() => handleGenderSelect(option)}
-                        >
-                          <Text style={styles.dropdownText}>{option}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
+                  {/* Dropdown moved to a Modal to ensure it renders above other content */}
                 </View>
 
                 <View style={styles.inputGroup}>
@@ -543,6 +580,36 @@ export default function SignUp() {
         </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+
+    {/* Gender dropdown modal */}
+    <Modal visible={showGenderPicker} transparent animationType="fade" onRequestClose={() => setShowGenderPicker(false)}>
+      <TouchableWithoutFeedback onPress={() => setShowGenderPicker(false)}>
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.dropdownAbsolute,
+              {
+                top: genderMenuRect.y + genderMenuRect.height + 4,
+                left: genderMenuRect.x,
+                width: Math.max(genderMenuRect.width, 200),
+              },
+            ]}
+          >
+            {genderOptions.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={styles.dropdownItem}
+                onPress={() => handleGenderSelect(option)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.dropdownText}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+    </>
   );
 }
 
@@ -594,6 +661,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollViewContent: {
+    paddingBottom: 40,
+  },
   form: {
     paddingHorizontal: 20,
     paddingBottom: 40,
@@ -609,6 +679,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     gap: 16,
+    position: 'relative',
+    zIndex: 9996,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -627,6 +699,8 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     gap: 6,
+    position: 'relative',
+    zIndex: 9997,
   },
   label: {
     fontSize: 14,
@@ -686,6 +760,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
+    zIndex: 99998,
   },
   selectText: {
     fontSize: 16,
@@ -705,12 +780,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     marginTop: 4,
     maxHeight: 200,
-    zIndex: 1000,
+    zIndex: 99999,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: 20,
   },
   dropdownItem: {
     paddingVertical: 12,
@@ -721,6 +796,25 @@ const styles = StyleSheet.create({
   dropdownText: {
     fontSize: 14,
     color: COLORS.text,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  dropdownAbsolute: {
+    position: 'absolute',
+    borderWidth: 1,
+    borderColor: COLORS.inputBorder,
+    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    maxHeight: 240,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 20,
+    overflow: 'hidden',
   },
   checkboxContainer: {
     flexDirection: 'row',

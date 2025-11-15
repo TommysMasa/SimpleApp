@@ -94,7 +94,7 @@ export default function Barcode() {
           }, 400);
         }
       } catch (error) {
-        console.error('❌ User data fetch error:', error);
+        // エラーログを削除（セキュリティ上の理由）
       } finally {
         setLoading(false);
       }
@@ -200,11 +200,6 @@ export default function Barcode() {
 
         {/* Membership Details */}
         <View style={styles.detailsContainer}>
-          <View style={styles.detailItem}>
-            <Ionicons name="card-outline" size={18} color={COLORS.textSecondary} />
-            <Text style={styles.detailLabel}>ID:</Text>
-            <Text style={styles.detailValue}>{userData.membershipId}</Text>
-          </View>
           <View style={styles.detailItem}>
             <Ionicons name={userData.isCheckedIn ? 'walk' : 'walk-outline'} size={18} color={userData.isCheckedIn ? COLORS.success : COLORS.textSecondary} />
             <Text style={styles.detailLabel}>Status:</Text>
